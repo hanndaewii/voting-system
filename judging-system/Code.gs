@@ -81,16 +81,24 @@ function doGet(e) {
       case 'myVotes':
         return handleMyVotes_(params);
 
+      case 'judgeStats':
+        return handleJudgeStats_(params);
+
       case 'results':
         return handleResults_();
 
       case 'status':
+        // Enriched with active judge/contestant counts and server time so the
+        // frontend can show "X of Y judges" and sync clocks without extra calls.
         return jsonOut_({
           ok: true,
           votingOpen: VOTING_OPEN,
           minScore: MIN_SCORE,
           maxScore: MAX_SCORE,
-          showLiveResults: SHOW_LIVE_RESULTS
+          showLiveResults: SHOW_LIVE_RESULTS,
+          activeJudges: countActiveJudges_(),
+          activeContestants: getActiveContestants_().length,
+          serverTime: formatNow_()
         });
 
       default:
@@ -224,6 +232,57 @@ function handleMyVotes_(params) {
   return jsonOut_({ ok: true, judgeName: judge.name, votes: votes });
 }
 
+/**
+ * Personal aggregate stats for the logged-in judge. Computes scored/total,
+ * average, highest, lowest, and the spread of their OWN scores only.
+ * Never reveals other judges' scores or identities.
+ */
+function handleJudgeStats_(params) {
+  var judgeId = str_(params.judgeId);
+  var password = str_(params.password);
+
+  if (!password) return jsonOut_({ ok: false, error: 'Missing password.' });
+  if (password !== JUDGE_PASSWORD) return jsonOut_({ ok: false, error: 'Invalid password.' });
+  if (!judgeId) return jsonOut_({ ok: false, error: 'Missing Judge ID.' });
+
+  var judge = getActiveJudge_(judgeId);
+  if (!judge) return jsonOut_({ ok: false, error: 'Invalid or inactive Judge ID.' });
+
+  var votes = getJudgeVotes_(judgeId);
+  var contestants = getActiveContestants_();
+  var total = contestants.length;
+  var scoredList = [];
+  for (var i = 0; i < contestants.length; i++) {
+    var cid = contestants[i].id;
+    if (votes[cid] !== undefined && votes[cid] !== null) {
+      var n = Number(votes[cid]);
+      if (isFinite(n)) scoredList.push(n);
+    }
+  }
+  var scored = scoredList.length;
+  var sum = 0, highest = null, lowest = null;
+  for (var j = 0; j < scoredList.length; j++) {
+    var v = scoredList[j];
+    sum += v;
+    if (highest === null || v > highest) highest = v;
+    if (lowest === null || v < lowest) lowest = v;
+  }
+  var average = scored > 0 ? Math.round((sum / scored) * 100) / 100 : null;
+  var complete = total > 0 && scored === total;
+  return jsonOut_({
+    ok: true,
+    judgeName: judge.name,
+    total: total,
+    scored: scored,
+    remaining: Math.max(0, total - scored),
+    average: average,
+    highest: highest,
+    lowest: lowest,
+    complete: complete,
+    progressPct: total > 0 ? Math.round((scored / total) * 100) : 0
+  });
+}
+
 function handleResults_() {
   if (!SHOW_LIVE_RESULTS) {
     return jsonOut_({
@@ -334,6 +393,22 @@ function getActiveJudge_(id) {
     }
   }
   return null;
+}
+
+/**
+ * Count active judges. Used by the public status endpoint so the frontend
+ * can display "X active judges" without exposing who they are.
+ */
+function countActiveJudges_() {
+  var sheet = getSpreadsheet_().getSheetByName(SHEET_JUDGES);
+  var last = sheet.getLastRow();
+  if (last < 2) return 0;
+  var data = sheet.getRange(2, 1, last - 1, 3).getValues();
+  var count = 0;
+  for (var i = 0; i < data.length; i++) {
+    if (str_(data[i][0]) && parseBool_(data[i][2])) count++;
+  }
+  return count;
 }
 
 /**

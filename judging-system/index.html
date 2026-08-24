@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -7,20 +7,25 @@
   <title>JUDGED VOTE — Judging System</title>
   <style>
     /* =========================================================
-       Design tokens
+       Design tokens — light theme (default)
        ========================================================= */
     :root {
       --bg: #0f172a;
       --bg-soft: #1e293b;
+      --bg-grad-1: #0f172a;
+      --bg-grad-2: #1e293b;
       --card: #ffffff;
       --card-soft: #f8fafc;
+      --card-elev: #ffffff;
       --text: #0f172a;
       --text-muted: #64748b;
       --text-light: #ffffff;
       --text-light-muted: #cbd5e1;
       --border: #e2e8f0;
+      --border-strong: #cbd5e1;
       --primary: #0f766e;        /* deep teal (no indigo/blue) */
       --primary-strong: #115e59;
+      --primary-soft: #ccfbf1;
       --primary-fg: #ffffff;
       --accent: #b45309;         /* amber */
       --success: #16a34a;
@@ -33,10 +38,49 @@
       --info-soft: #e0f2fe;
       --radius: 14px;
       --radius-sm: 8px;
+      --radius-xs: 6px;
       --shadow: 0 10px 30px rgba(2, 6, 23, 0.12);
       --shadow-sm: 0 2px 8px rgba(2, 6, 23, 0.08);
-      --maxw: 880px;
+      --shadow-lg: 0 20px 50px rgba(2, 6, 23, 0.18);
+      --maxw: 920px;
       --touch: 48px;
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-t: env(safe-area-inset-top, 0px);
+    }
+
+    /* =========================================================
+       Dark theme
+       ========================================================= */
+    [data-theme="dark"] {
+      --bg: #020617;
+      --bg-soft: #0f172a;
+      --bg-grad-1: #020617;
+      --bg-grad-2: #0f172a;
+      --card: #0f172a;
+      --card-soft: #1e293b;
+      --card-elev: #1e293b;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-light: #ffffff;
+      --text-light-muted: #cbd5e1;
+      --border: #1e293b;
+      --border-strong: #334155;
+      --primary: #14b8a6;
+      --primary-strong: #0d9488;
+      --primary-soft: #134e4a;
+      --primary-fg: #0f172a;
+      --accent: #f59e0b;
+      --success: #22c55e;
+      --success-soft: #052e16;
+      --warning: #eab308;
+      --warning-soft: #422006;
+      --error: #ef4444;
+      --error-soft: #450a0a;
+      --info: #0ea5e9;
+      --info-soft: #082f49;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+      --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.6);
     }
 
     * { box-sizing: border-box; }
@@ -44,10 +88,12 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       color: var(--text);
-      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+      background: linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+      background-attachment: fixed;
       min-height: 100%;
       -webkit-text-size-adjust: 100%;
       -webkit-tap-highlight-color: transparent;
+      transition: background .25s ease, color .25s ease;
     }
 
     /* layout shell — sticky footer behaviour */
@@ -55,13 +101,14 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      padding-top: var(--safe-t);
     }
     main {
       flex: 1 0 auto;
       width: 100%;
       max-width: var(--maxw);
       margin: 0 auto;
-      padding: 16px 16px 40px;
+      padding: 16px 16px calc(40px + var(--safe-b));
     }
 
     /* =========================================================
@@ -70,11 +117,16 @@
     header.topbar {
       background: rgba(15, 23, 42, 0.92);
       color: var(--text-light);
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       position: sticky;
       top: 0;
-      z-index: 20;
+      z-index: 30;
       border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    [data-theme="dark"] header.topbar {
+      background: rgba(2, 6, 23, 0.92);
+      border-bottom-color: rgba(255,255,255,0.05);
     }
     .topbar-inner {
       max-width: var(--maxw);
@@ -97,7 +149,12 @@
       width: 10px; height: 10px;
       border-radius: 999px;
       background: var(--primary);
-      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.25);
+      box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.25);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.25); }
+      50% { box-shadow: 0 0 0 7px rgba(20, 184, 166, 0.12); }
     }
     .topbar-meta {
       font-size: 12px;
@@ -115,8 +172,24 @@
       letter-spacing: 0.4px;
       text-transform: uppercase;
     }
-    .pill.open { background: rgba(22,163,74,0.18); color: #bbf7d0; }
-    .pill.closed { background: rgba(220,38,38,0.18); color: #fecaca; }
+    .pill.open { background: rgba(22,163,74,0.2); color: #bbf7d0; }
+    .pill.closed { background: rgba(220,38,38,0.2); color: #fecaca; }
+
+    .icon-btn {
+      width: 36px; height: 36px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06);
+      color: var(--text-light);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s, transform .1s;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.14); }
+    .icon-btn:active { transform: scale(0.95); }
+    .icon-btn svg { width: 18px; height: 18px; display: block; }
 
     /* =========================================================
        Login screen
@@ -132,18 +205,27 @@
       width: 100%;
       max-width: 420px;
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 28px 24px;
+      box-shadow: var(--shadow-lg);
+      padding: 32px 26px;
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
     }
     .auth-card h1 {
       margin: 0 0 4px;
-      font-size: 22px;
+      font-size: 24px;
       letter-spacing: 0.4px;
     }
     .auth-card .sub {
       color: var(--text-muted);
       font-size: 13px;
-      margin: 0 0 22px;
+      margin: 0 0 24px;
     }
     .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
     label {
@@ -153,22 +235,23 @@
       color: var(--text-muted);
       text-transform: uppercase;
     }
-    input[type="text"], input[type="password"], input[type="number"], select {
+    input[type="text"], input[type="password"], input[type="number"], input[type="search"], select {
       width: 100%;
       height: var(--touch);
       padding: 0 14px;
-      border: 1.5px solid var(--border);
+      border: 1.5px solid var(--border-strong);
       border-radius: var(--radius-sm);
       background: var(--card-soft);
       color: var(--text);
       font-size: 16px; /* avoids iOS zoom */
       transition: border-color .15s, box-shadow .15s, background .15s;
     }
+    input::placeholder { color: var(--text-muted); opacity: 0.7; }
     input:focus, select:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 4px rgba(15,118,110,0.15);
-      background: #fff;
+      box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.18);
+      background: var(--card);
     }
     .btn {
       display: inline-flex;
@@ -184,20 +267,21 @@
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
-      transition: transform .05s, background .15s, box-shadow .15s, opacity .15s;
+      transition: transform .08s, background .15s, box-shadow .15s, opacity .15s;
       box-shadow: var(--shadow-sm);
       min-height: var(--touch);
     }
-    .btn:active { transform: translateY(1px); }
     .btn:hover { background: var(--primary-strong); }
-    .btn[disabled] { opacity: .55; cursor: not-allowed; }
+    .btn:active { transform: translateY(1px); }
+    .btn[disabled] { opacity: .5; cursor: not-allowed; }
     .btn.block { width: 100%; }
-    .btn.ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border); box-shadow: none; }
+    .btn.ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border-strong); box-shadow: none; }
     .btn.ghost:hover { background: var(--card-soft); }
-    .btn.danger { background: var(--error); }
+    .btn.danger { background: var(--error); color: #fff; }
     .btn.danger:hover { background: #b91c1c; }
-    .btn.subtle { background: var(--card-soft); color: var(--text); border: 1.5px solid var(--border); box-shadow: none; }
-    .btn.subtle:hover { background: #f1f5f9; }
+    .btn.subtle { background: var(--card-soft); color: var(--text); border: 1.5px solid var(--border-strong); box-shadow: none; }
+    .btn.subtle:hover { background: var(--card); border-color: var(--primary); }
+    .btn.primary-strong { background: linear-gradient(135deg, var(--primary), var(--primary-strong)); }
 
     .alert {
       margin-top: 14px;
@@ -209,9 +293,9 @@
       gap: 8px;
     }
     .alert.show { display: flex; }
-    .alert.error { background: var(--error-soft); color: #991b1b; }
-    .alert.info { background: var(--info-soft); color: #075985; }
-    .alert.success { background: var(--success-soft); color: #166534; }
+    .alert.error { background: var(--error-soft); color: var(--error); }
+    .alert.info { background: var(--info-soft); color: var(--info); }
+    .alert.success { background: var(--success-soft); color: var(--success); }
     .alert .ic { flex: 0 0 auto; margin-top: 1px; }
 
     /* =========================================================
@@ -221,38 +305,162 @@
       background: var(--card);
       border-radius: var(--radius);
       box-shadow: var(--shadow-sm);
-      padding: 18px 18px;
-      margin-bottom: 18px;
+      padding: 20px 20px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .dash-head::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, var(--primary), var(--accent));
     }
     .dash-title {
       display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
       flex-wrap: wrap;
     }
-    .dash-title h2 { margin: 0; font-size: 18px; }
+    .dash-title h2 { margin: 0; font-size: 20px; font-weight: 800; }
     .dash-title .judge-name { color: var(--primary-strong); font-weight: 800; }
-    .dash-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .progress-wrap { margin-top: 14px; }
+    [data-theme="dark"] .dash-title .judge-name { color: var(--primary); }
+    .dash-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .dash-actions .btn, .dash-actions .icon-btn { height: 40px; min-height: 40px; }
+    .dash-actions .btn { padding: 0 14px; font-size: 13px; }
+
+    .progress-wrap { margin-top: 16px; }
     .progress-meta {
       display: flex; justify-content: space-between; font-size: 12px;
-      color: var(--text-muted); margin-bottom: 6px;
+      color: var(--text-muted); margin-bottom: 8px;
       font-weight: 700; letter-spacing: 0.3px;
     }
+    .progress-meta .pct { color: var(--primary-strong); font-weight: 800; }
+    [data-theme="dark"] .progress-meta .pct { color: var(--primary); }
     .progress-track {
-      height: 10px; border-radius: 999px; background: var(--border); overflow: hidden;
+      height: 12px; border-radius: 999px; background: var(--border); overflow: hidden;
+      position: relative;
     }
     .progress-fill {
       height: 100%; width: 0%;
       background: linear-gradient(90deg, var(--primary), #14b8a6);
       border-radius: 999px;
-      transition: width .35s ease;
+      transition: width .4s cubic-bezier(.4,0,.2,1);
+      position: relative;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 2s linear infinite;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .progress-fill.complete {
+      background: linear-gradient(90deg, var(--success), #4ade80);
     }
 
+    /* Stats strip */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .stat-tile {
+      background: var(--card-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat-tile .v {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.1;
+    }
+    .stat-tile .l {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-top: 2px;
+      font-weight: 700;
+    }
+    .stat-tile.avg .v { color: var(--info); }
+    .stat-tile.hi .v { color: var(--success); }
+    .stat-tile.lo .v { color: var(--accent); }
+    .stat-tile.rem .v { color: var(--text-muted); }
+
+    /* =========================================================
+       Toolbar — search / sort / filter
+       ========================================================= */
+    .toolbar {
+      display: flex; gap: 8px; align-items: center;
+      margin-bottom: 14px; flex-wrap: wrap;
+      background: var(--card);
+      padding: 10px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .search-wrap {
+      flex: 1 1 200px;
+      position: relative;
+      display: flex; align-items: center;
+    }
+    .search-wrap svg {
+      position: absolute; left: 12px;
+      width: 16px; height: 16px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .search-wrap input {
+      padding-left: 36px;
+      height: 40px;
+      font-size: 14px;
+    }
+    .sort-select {
+      flex: 0 0 auto;
+      height: 40px;
+      width: auto;
+      padding: 0 28px 0 12px;
+      font-size: 13px;
+      font-weight: 600;
+      background-position: right 8px center;
+    }
+    .toggle-chip {
+      flex: 0 0 auto;
+      height: 40px;
+      padding: 0 14px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border-strong);
+      background: var(--card-soft);
+      color: var(--text-muted);
+      font-size: 12px; font-weight: 700;
+      cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: all .15s;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .toggle-chip.active {
+      background: var(--primary-soft);
+      color: var(--primary-strong);
+      border-color: var(--primary);
+    }
+    [data-theme="dark"] .toggle-chip.active { color: var(--primary); }
+    .toolbar .right { margin-left: auto; color: var(--text-muted); font-size: 12px; }
+
+    /* =========================================================
+       Contestant grid + cards
+       ========================================================= */
     .grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 12px;
     }
-    @media (min-width: 640px) {
+    @media (min-width: 680px) {
       .grid { grid-template-columns: 1fr 1fr; }
     }
 
@@ -264,60 +472,95 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      border: 1px solid transparent;
+      border: 1.5px solid transparent;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+      animation: cardIn .35s ease both;
     }
-    .card.saved { border-color: rgba(22,163,74,0.35); }
-    .card.error { border-color: rgba(220,38,38,0.4); }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .card.saved { border-color: rgba(22,163,74,0.4); }
+    [data-theme="dark"] .card.saved { border-color: rgba(34,197,94,0.4); }
+    .card.error { border-color: rgba(220,38,38,0.5); }
+    [data-theme="dark"] .card.error { border-color: rgba(239,68,68,0.5); }
     .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
     .contestant-name { font-weight: 800; font-size: 16px; line-height: 1.25; }
     .contestant-id {
       font-size: 11px; color: var(--text-muted);
-      letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px;
+      letter-spacing: 0.5px; text-transform: uppercase; margin-top: 3px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
     .badge {
       font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
       padding: 4px 9px; border-radius: 999px; text-transform: uppercase;
       white-space: nowrap;
     }
-    .badge.notscored { background: var(--card-soft); color: var(--text-muted); }
-    .badge.saved { background: var(--success-soft); color: #166534; }
-    .badge.saving { background: var(--warning-soft); color: #854d0e; }
-    .badge.updating { background: var(--info-soft); color: #075985; }
-    .badge.error { background: var(--error-soft); color: #991b1b; }
+    .badge.notscored { background: var(--card-soft); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge.saved { background: var(--success-soft); color: var(--success); }
+    .badge.saving { background: var(--warning-soft); color: var(--warning); }
+    .badge.updating { background: var(--info-soft); color: var(--info); }
+    .badge.error { background: var(--error-soft); color: var(--error); }
 
     .score-row { display: flex; gap: 8px; align-items: stretch; }
     .score-row input[type="number"] {
-      flex: 1 1 auto; text-align: center; font-size: 18px; font-weight: 800;
+      flex: 1 1 auto; text-align: center; font-size: 20px; font-weight: 800;
+      transition: background .2s, border-color .2s;
     }
+    .score-row input[type="number"].heat-low { background: var(--error-soft); border-color: var(--error); color: var(--error); }
+    .score-row input[type="number"].heat-mid { background: var(--warning-soft); border-color: var(--warning); color: var(--warning); }
+    .score-row input[type="number"].heat-high { background: var(--success-soft); border-color: var(--success); color: var(--success); }
     .score-row .btn { flex: 0 0 auto; min-width: 130px; }
     .hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .card-msg {
       font-size: 12px;
       display: none;
       gap: 6px; align-items: center;
-      padding: 6px 10px; border-radius: var(--radius-sm);
+      padding: 7px 11px; border-radius: var(--radius-sm);
+      font-weight: 600;
     }
     .card-msg.show { display: flex; }
-    .card-msg.success { background: var(--success-soft); color: #166534; }
-    .card-msg.error { background: var(--error-soft); color: #991b1b; }
-    .card-msg.info { background: var(--info-soft); color: #075985; }
+    .card-msg.success { background: var(--success-soft); color: var(--success); }
+    .card-msg.error { background: var(--error-soft); color: var(--error); }
+    .card-msg.info { background: var(--info-soft); color: var(--info); }
     .card-msg .ic { flex: 0 0 auto; }
 
-    /* stepper buttons around the score input */
-    .stepper {
-      display: flex; flex-direction: column; gap: 2px;
+    /* Quick-score chips */
+    .chips {
+      display: flex; flex-wrap: wrap; gap: 6px;
     }
+    .chip {
+      flex: 1 1 0;
+      min-width: 44px;
+      height: 32px;
+      border-radius: var(--radius-xs);
+      border: 1.5px solid var(--border-strong);
+      background: var(--card-soft);
+      color: var(--text-muted);
+      font-weight: 700; font-size: 13px;
+      cursor: pointer;
+      transition: all .12s;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .chip:hover { border-color: var(--primary); color: var(--primary-strong); background: var(--primary-soft); }
+    [data-theme="dark"] .chip:hover { color: var(--primary); }
+    .chip:active { transform: scale(0.94); }
+    .chip[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+    /* Stepper */
+    .stepper { display: flex; flex-direction: column; gap: 2px; }
     .stepper button {
       width: 36px; height: 23px;
-      border: 1.5px solid var(--border);
+      border: 1.5px solid var(--border-strong);
       background: var(--card-soft);
       color: var(--text);
       border-radius: 6px;
       font-weight: 800; cursor: pointer;
-      font-size: 12px;
-      line-height: 1;
+      font-size: 12px; line-height: 1;
+      transition: all .12s;
     }
-    .stepper button:hover { background: #f1f5f9; }
+    .stepper button:hover { background: var(--primary-soft); border-color: var(--primary); }
 
     /* small spinner */
     .spin {
@@ -330,44 +573,111 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .toolbar {
-      display: flex; gap: 8px; align-items: center; justify-content: space-between;
-      margin-bottom: 14px; flex-wrap: wrap;
+    /* =========================================================
+       Toasts
+       ========================================================= */
+    .toast-stack {
+      position: fixed;
+      right: 16px;
+      bottom: calc(16px + var(--safe-b));
+      z-index: 50;
+      display: flex; flex-direction: column; gap: 8px;
+      max-width: calc(100vw - 32px);
+      pointer-events: none;
     }
-    .toolbar .left { display: flex; gap: 8px; flex-wrap: wrap; }
-    .toolbar .right { color: var(--text-muted); font-size: 12px; }
+    .toast {
+      pointer-events: auto;
+      min-width: 240px;
+      max-width: 360px;
+      background: var(--card);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 13px; font-weight: 600;
+      border-left: 4px solid var(--text-muted);
+      animation: toastIn .25s ease both;
+    }
+    .toast.success { border-left-color: var(--success); }
+    .toast.error { border-left-color: var(--error); }
+    .toast.info { border-left-color: var(--info); }
+    .toast .ic { flex: 0 0 auto; margin-top: 1px; font-size: 16px; }
+    .toast .body { flex: 1 1 auto; }
+    .toast .close {
+      flex: 0 0 auto;
+      background: transparent; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 18px; line-height: 1;
+      padding: 0 4px;
+    }
+    .toast.leaving { animation: toastOut .25s ease both; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(40px); }
+    }
 
     /* =========================================================
-       Footer
+       Confetti / completion celebration
        ========================================================= */
-    footer.site {
-      flex-shrink: 0;
-      background: rgba(15,23,42,0.92);
-      color: var(--text-light-muted);
-      text-align: center;
-      padding: 14px 16px;
-      font-size: 12px;
-      margin-top: auto;
-      border-top: 1px solid rgba(255,255,255,0.08);
+    .celebrate {
+      position: fixed; inset: 0;
+      z-index: 60;
+      pointer-events: none;
+      overflow: hidden;
+      display: none;
     }
-    footer.site a { color: var(--text-light); text-decoration: none; font-weight: 700; }
-    footer.site .sep { margin: 0 8px; opacity: .5; }
+    .celebrate.show { display: block; }
+    .celebrate .banner {
+      position: absolute;
+      top: 30%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: linear-gradient(135deg, var(--success), #4ade80);
+      color: #fff;
+      padding: 18px 28px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      font-weight: 800;
+      text-align: center;
+      animation: bannerIn .5s ease both;
+    }
+    .celebrate .banner .big { font-size: 22px; }
+    .celebrate .banner .small { font-size: 13px; opacity: 0.92; margin-top: 4px; font-weight: 600; }
+    @keyframes bannerIn {
+      from { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+      to   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    .confetti-piece {
+      position: absolute;
+      top: -10px;
+      width: 8px; height: 14px;
+      border-radius: 2px;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+      to { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+    }
 
     /* skeleton */
     .skeleton {
       height: 130px;
       border-radius: var(--radius);
-      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 37%, #e2e8f0 63%);
+      background: linear-gradient(90deg, var(--card-soft) 25%, var(--card) 37%, var(--card-soft) 63%);
       background-size: 400% 100%;
-      animation: shimmer 1.4s ease-in-out infinite;
+      animation: skShimmer 1.4s ease-in-out infinite;
     }
-    @keyframes shimmer {
+    @keyframes skShimmer {
       0% { background-position: 100% 0; }
       100% { background-position: 0 0; }
     }
 
     .empty {
       text-align: center; padding: 40px 12px; color: var(--text-muted);
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
     }
     .empty .big { font-size: 40px; margin-bottom: 8px; }
 
@@ -386,9 +696,13 @@
           <span class="brand-dot"></span>
           <span>JUDGED VOTE</span>
         </div>
-        <div class="topbar-meta" id="voteStatusPill">
+        <div class="topbar-meta">
           <span class="pill open" id="pillOpen">Voting Open</span>
           <span class="pill closed hidden" id="pillClosed">Voting Closed</span>
+          <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </button>
         </div>
       </div>
     </header>
@@ -413,7 +727,7 @@
               <input type="password" id="password" name="password" placeholder="Shared password" autocomplete="current-password" required />
             </div>
 
-            <button type="submit" class="btn block" id="loginBtn">
+            <button type="submit" class="btn block primary-strong" id="loginBtn">
               <span id="loginBtnLabel">Enter Judging System</span>
             </button>
 
@@ -433,24 +747,42 @@
           <div class="dash-title">
             <h2>Your Judging <span class="judge-name" id="judgeNameLabel"></span></h2>
             <div class="dash-actions">
-              <button class="btn subtle" id="refreshBtn" type="button">↻ Refresh</button>
+              <button class="btn subtle" id="refreshBtn" type="button" title="Reload from Google Sheets">↻ Refresh</button>
               <button class="btn ghost" id="logoutBtn" type="button">Log out</button>
             </div>
           </div>
           <div class="progress-wrap">
             <div class="progress-meta">
-              <span>Progress</span>
               <span id="progressLabel">0 / 0 contestants scored</span>
+              <span class="pct" id="progressPct">0%</span>
             </div>
             <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          </div>
+          <div class="stats-strip" id="statsStrip">
+            <div class="stat-tile avg"><div class="v" id="statAvg">—</div><div class="l">Average</div></div>
+            <div class="stat-tile hi"><div class="v" id="statHi">—</div><div class="l">Highest</div></div>
+            <div class="stat-tile lo"><div class="v" id="statLo">—</div><div class="l">Lowest</div></div>
+            <div class="stat-tile rem"><div class="v" id="statRem">—</div><div class="l">Remaining</div></div>
           </div>
         </div>
 
         <div class="toolbar">
-          <div class="left">
-            <button class="btn subtle" id="saveAllBtn" type="button">Save all pending</button>
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" id="searchInput" placeholder="Search contestants…" aria-label="Search contestants" />
           </div>
-          <div class="right" id="rangeLabel">Score range: 1 – 100</div>
+          <select id="sortSelect" class="sort-select" aria-label="Sort contestants">
+            <option value="status">Sort: Unscored first</option>
+            <option value="name">Sort: Name A→Z</option>
+            <option value="scoreAsc">Sort: Score low→high</option>
+            <option value="scoreDesc">Sort: Score high→low</option>
+          </select>
+          <button class="toggle-chip" id="unscoredOnly" type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>
+            Unscored only
+          </button>
+          <button class="btn subtle" id="saveAllBtn" type="button" style="height:40px;min-height:40px;font-size:13px;padding:0 14px;">Save all pending</button>
+          <span class="right" id="rangeLabel">Range 1–100</span>
         </div>
 
         <div class="grid" id="contestantGrid">
@@ -468,13 +800,31 @@
     <!-- =========================================================
          Footer
          ========================================================= -->
-    <footer class="site">
+    <footer class="site" style="
+      flex-shrink: 0;
+      background: rgba(15,23,42,0.92);
+      color: var(--text-light-muted);
+      text-align: center;
+      padding: 14px 16px calc(14px + var(--safe-b));
+      font-size: 12px;
+      margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    ">
       <span>JUDGED VOTE</span>
-      <span class="sep">·</span>
+      <span style="margin:0 8px;opacity:.5;">·</span>
       <span>Google Sheets is the source of truth</span>
-      <span class="sep">·</span>
+      <span style="margin:0 8px;opacity:.5;">·</span>
       <span>Static frontend — host anywhere</span>
     </footer>
+  </div>
+
+  <!-- Toast container + celebration overlay -->
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+  <div class="celebrate" id="celebrate" aria-hidden="true">
+    <div class="banner">
+      <div class="big">🎉 All scored!</div>
+      <div class="small">You've scored every active contestant.</div>
+    </div>
   </div>
 
   <!-- =========================================================
@@ -487,12 +837,11 @@
     // ============================================================
     const API_URL = 'PASTE_YOUR_APPS_SCRIPT_EXEC_URL_HERE';
 
-    // Local UI constants — these are just hints; the backend is the real
-    // enforcer. We also fetch the live status from the API on load.
     const DEFAULT_MIN_SCORE = 1;
     const DEFAULT_MAX_SCORE = 100;
 
-    const SS_KEY = 'jv_creds'; // sessionStorage key for this browser session
+    const SS_KEY = 'jv_creds';
+    const THEME_KEY = 'jv_theme';
     const RETRYABLE_HINTS = [
       'Server busy', 'Server error', 'Failed to fetch',
       'NetworkError', 'Network request failed', 'Load failed',
@@ -506,13 +855,20 @@
       judgeId: null,
       password: null,
       judgeName: null,
-      contestants: [],     // [{id, name}]
-      votes: {},           // { contestantId: score } from server
-      uiScores: {},        // { contestantId: currentInputValue }
-      statuses: {},        // { contestantId: 'notscored'|'saved'|'saving'|'updating'|'error' }
+      contestants: [],
+      votes: {},
+      uiScores: {},
+      statuses: {},
       votingOpen: true,
       minScore: DEFAULT_MIN_SCORE,
-      maxScore: DEFAULT_MAX_SCORE
+      maxScore: DEFAULT_MAX_SCORE,
+      activeJudges: 0,
+      activeContestants: 0,
+      stats: { scored: 0, total: 0, average: null, highest: null, lowest: null, complete: false, progressPct: 0 },
+      search: '',
+      sort: 'status',
+      unscoredOnly: false,
+      celebrated: false
     };
 
     // ============================================================
@@ -521,7 +877,6 @@
     const $ = (sel) => document.querySelector(sel);
     const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-    function setHtml(el, html) { if (el) el.innerHTML = html; }
     function escapeHtml(s) {
       return String(s == null ? '' : s)
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -531,6 +886,103 @@
       const t = String(errText || '').toLowerCase();
       return RETRYABLE_HINTS.some(h => t.indexOf(h.toLowerCase()) !== -1);
     }
+    function cssEscape(s) {
+      return String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+    }
+
+    // ============================================================
+    // Toast system
+    // ============================================================
+    const TOAST_ICONS = {
+      success: '✓', error: '✕', info: 'ⓘ'
+    };
+    function toast(msg, type = 'info', ttl = 3200) {
+      const stack = $('#toastStack');
+      if (!stack) return;
+      const el = document.createElement('div');
+      el.className = 'toast ' + type;
+      el.innerHTML = '<span class="ic">' + (TOAST_ICONS[type] || 'ⓘ') + '</span>' +
+                     '<span class="body">' + escapeHtml(msg) + '</span>' +
+                     '<button class="close" aria-label="Dismiss">×</button>';
+      const close = () => {
+        el.classList.add('leaving');
+        setTimeout(() => el.remove(), 250);
+      };
+      el.querySelector('.close').addEventListener('click', close);
+      stack.appendChild(el);
+      if (ttl) setTimeout(close, ttl);
+    }
+
+    // ============================================================
+    // Theme
+    // ============================================================
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      $('#iconSun').classList.toggle('hidden', theme === 'dark');
+      $('#iconMoon').classList.toggle('hidden', theme !== 'dark');
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', theme === 'dark' ? '#020617' : '#0f172a');
+    }
+    function loadTheme() {
+      let t = 'light';
+      try { t = localStorage.getItem(THEME_KEY) || 'light'; } catch (e) {}
+      if (t !== 'dark') t = 'light';
+      applyTheme(t);
+    }
+    function toggleTheme() {
+      const cur = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = cur === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+      applyTheme(next);
+    }
+
+    // ============================================================
+    // Confetti / celebration
+    // ============================================================
+    function celebrate() {
+      const el = $('#celebrate');
+      if (!el || el.classList.contains('show')) return;
+      // confetti pieces
+      const colors = ['#0f766e', '#14b8a6', '#b45309', '#f59e0b', '#16a34a', '#22c55e', '#dc2626'];
+      for (let i = 0; i < 70; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-piece';
+        p.style.left = (Math.random() * 100) + '%';
+        p.style.background = colors[i % colors.length];
+        p.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
+        p.style.animationDelay = (Math.random() * 0.6) + 's';
+        p.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+        el.appendChild(p);
+      }
+      el.classList.add('show');
+      setTimeout(() => {
+        el.classList.remove('show');
+        // remove confetti pieces
+        el.querySelectorAll('.confetti-piece').forEach(n => n.remove());
+      }, 3800);
+    }
+
+    // ============================================================
+    // Unsaved-changes guard
+    // ============================================================
+    function hasUnsavedChanges() {
+      if (!state.judgeId) return false;
+      for (const c of state.contestants) {
+        const ui = state.uiScores[c.id];
+        if (ui === undefined || ui === '') continue;
+        const saved = state.votes[c.id];
+        if (saved === undefined || saved === null) return true; // typed but not saved
+        if (Number(ui) !== Number(saved)) return true;
+      }
+      return false;
+    }
+    window.addEventListener('beforeunload', (e) => {
+      if (hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved score changes. Leave anyway?';
+        return e.returnValue;
+      }
+    });
 
     // ============================================================
     // API layer
@@ -547,9 +999,7 @@
       catch (e) { throw new Error('Invalid response from server.'); }
       return json;
     }
-
     async function apiPost(body) {
-      // text/plain avoids CORS preflight with Apps Script
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -561,32 +1011,20 @@
       catch (e) { throw new Error('Invalid response from server.'); }
       return json;
     }
-
-    /**
-     * Save a vote. Retries ONCE for transient errors only.
-     * Never retries on definitive errors (bad password, invalid IDs,
-     * invalid score, voting closed).
-     */
     async function saveVoteWithRetry(judgeId, contestantId, score, password) {
       let lastErr = null;
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
           const r = await apiPost({
-            action: 'saveVote',
-            judgeId: judgeId,
-            contestantId: contestantId,
-            score: score,
-            password: password
+            action: 'saveVote', judgeId, contestantId, score, password
           });
           if (r && r.ok) return { ok: true, response: r };
-          // Definitive server error — do not retry
           return { ok: false, error: (r && r.error) || 'Save failed.', retry: false };
         } catch (e) {
           lastErr = e;
           if (attempt === 2 || !isRetryable(e.message)) {
             return { ok: false, error: e.message || 'Network error.', retry: true };
           }
-          // wait briefly then retry once
           await new Promise(r => setTimeout(r, 700));
         }
       }
@@ -597,9 +1035,7 @@
     // Auth & session
     // ============================================================
     function saveCreds(judgeId, password) {
-      try {
-        sessionStorage.setItem(SS_KEY, JSON.stringify({ judgeId, password }));
-      } catch (e) { /* sessionStorage may be disabled; ignore */ }
+      try { sessionStorage.setItem(SS_KEY, JSON.stringify({ judgeId, password })); } catch (e) {}
     }
     function loadCreds() {
       try {
@@ -610,9 +1046,7 @@
         return o;
       } catch (e) { return null; }
     }
-    function clearCreds() {
-      try { sessionStorage.removeItem(SS_KEY); } catch (e) {}
-    }
+    function clearCreds() { try { sessionStorage.removeItem(SS_KEY); } catch (e) {} }
 
     // ============================================================
     // Login flow
@@ -622,9 +1056,7 @@
       $('#loginAlertText').textContent = msg;
       a.classList.add('show');
     }
-    function clearLoginError() {
-      $('#loginAlert').classList.remove('show');
-    }
+    function clearLoginError() { $('#loginAlert').classList.remove('show'); }
 
     async function handleLogin(e) {
       e.preventDefault();
@@ -635,12 +1067,13 @@
       btn.disabled = true;
       $('#loginBtnLabel').innerHTML = '<span class="spin"></span> Signing in…';
       try {
-        const r = await apiGet({ action: 'myVotes', judgeId: judgeId, password: password });
+        const r = await apiGet({ action: 'myVotes', judgeId, password });
         if (r && r.ok) {
           state.judgeId = judgeId;
           state.password = password;
           state.judgeName = r.judgeName || '';
           state.votes = r.votes || {};
+          state.celebrated = false;
           saveCreds(judgeId, password);
           await enterDashboard();
         } else {
@@ -658,10 +1091,10 @@
       $('#authView').classList.add('hidden');
       $('#dashView').classList.remove('hidden');
       $('#judgeNameLabel').textContent = state.judgeName ? '· ' + state.judgeName : '';
-      // Load status + contestants in parallel
       await loadStatusAndContestants();
       renderContestants();
       updateProgress();
+      refreshStats();
     }
 
     async function loadStatusAndContestants() {
@@ -674,6 +1107,8 @@
           state.votingOpen = !!status.votingOpen;
           state.minScore = status.minScore || DEFAULT_MIN_SCORE;
           state.maxScore = status.maxScore || DEFAULT_MAX_SCORE;
+          state.activeJudges = status.activeJudges || 0;
+          state.activeContestants = status.activeContestants || 0;
         }
         if (contestRes && contestRes.ok) {
           state.contestants = contestRes.contestants || [];
@@ -683,24 +1118,75 @@
       } catch (e) {
         state.contestants = [];
       }
-      // Update UI flags
       $('#pillOpen').classList.toggle('hidden', !state.votingOpen);
       $('#pillClosed').classList.toggle('hidden', state.votingOpen);
-      $('#rangeLabel').textContent = 'Score range: ' + state.minScore + ' – ' + state.maxScore;
+      $('#rangeLabel').textContent = 'Range ' + state.minScore + '–' + state.maxScore;
       $('#saveAllBtn').disabled = !state.votingOpen;
     }
 
     // ============================================================
-    // Rendering
+    // Rendering — contestant cards with sort/filter/search
     // ============================================================
     function statusBadge(s) {
       switch (s) {
-        case 'saved':    return { cls: 'saved',    label: '✓ Saved' };
-        case 'saving':  return { cls: 'saving',   label: '<span class="spin"></span> Saving…' };
-        case 'updating':return { cls: 'updating', label: '<span class="spin"></span> Updating…' };
-        case 'error':   return { cls: 'error',    label: 'Error' };
-        default:        return { cls: 'notscored',label: 'Not scored' };
+        case 'saved':     return { cls: 'saved',     label: '✓ Saved' };
+        case 'saving':    return { cls: 'saving',    label: '<span class="spin"></span> Saving…' };
+        case 'updating': return { cls: 'updating',  label: '<span class="spin"></span> Updating…' };
+        case 'error':     return { cls: 'error',     label: 'Error' };
+        default:          return { cls: 'notscored', label: 'Not scored' };
       }
+    }
+
+    function heatClass(v) {
+      if (v === '' || v === null || v === undefined) return '';
+      const n = Number(v);
+      if (!isFinite(n)) return '';
+      const span = state.maxScore - state.minScore;
+      if (span <= 0) return '';
+      const pct = (n - state.minScore) / span;
+      if (pct < 0.4) return 'heat-low';
+      if (pct < 0.7) return 'heat-mid';
+      return 'heat-high';
+    }
+
+    function getVisibleList() {
+      let list = state.contestants.slice();
+      const q = state.search.trim().toLowerCase();
+      if (q) list = list.filter(c => c.name.toLowerCase().indexOf(q) !== -1 || c.id.toLowerCase().indexOf(q) !== -1);
+      if (state.unscoredOnly) list = list.filter(c => state.votes[c.id] === undefined || state.votes[c.id] === null);
+
+      const sortMode = state.sort;
+      list.sort((a, b) => {
+        const aScored = state.votes[a.id] !== undefined && state.votes[a.id] !== null;
+        const bScored = state.votes[b.id] !== undefined && state.votes[b.id] !== null;
+        switch (sortMode) {
+          case 'name':
+            return a.name.localeCompare(b.name);
+          case 'scoreAsc':
+            return Number(state.votes[a.id] || 0) - Number(state.votes[b.id] || 0);
+          case 'scoreDesc':
+            return Number(state.votes[b.id] || 0) - Number(state.votes[a.id] || 0);
+          case 'status':
+          default:
+            if (aScored !== bScored) return aScored ? 1 : -1;
+            return a.id.localeCompare(b.id);
+        }
+      });
+      return list;
+    }
+
+    function quickScorePresets() {
+      // Mobile-friendly preset chips. Derived from min/max so they stay valid
+      // if the organizer changes the score range.
+      const lo = state.minScore, hi = state.maxScore;
+      const span = hi - lo;
+      return [
+        lo,
+        Math.round(lo + span * 0.25),
+        Math.round(lo + span * 0.5),
+        Math.round(lo + span * 0.75),
+        hi
+      ];
     }
 
     function renderContestants() {
@@ -713,27 +1199,30 @@
       }
       empty.classList.add('hidden');
 
-      // Sort: unscored first, then by contestant id
-      const list = state.contestants.slice().sort((a, b) => {
-        const aScored = state.votes[a.id] !== undefined && state.votes[a.id] !== null;
-        const bScored = state.votes[b.id] !== undefined && state.votes[b.id] !== null;
-        if (aScored !== bScored) return aScored ? 1 : -1;
-        return a.id.localeCompare(b.id);
-      });
+      const list = getVisibleList();
+      if (!list.length) {
+        grid.innerHTML = '<div class="empty" style="grid-column:1/-1;"><div class="big">🔍</div><div>No contestants match your filters.</div></div>';
+        return;
+      }
 
-      grid.innerHTML = list.map(c => {
+      const presets = quickScorePresets();
+      grid.innerHTML = list.map((c, idx) => {
         const savedScore = state.votes[c.id];
         const hasSaved = savedScore !== undefined && savedScore !== null;
         const st = hasSaved ? 'saved' : 'notscored';
         state.statuses[c.id] = st;
-        if (!state.uiScores[c.id]) state.uiScores[c.id] = hasSaved ? String(savedScore) : '';
+        if (state.uiScores[c.id] === undefined) state.uiScores[c.id] = hasSaved ? String(savedScore) : '';
         const badge = statusBadge(st);
         const inputVal = state.uiScores[c.id] || '';
         const btnLabel = hasSaved ? 'Update Score' : 'Save Score';
-        const btnDisabled = !state.votingOpen ? 'disabled' : '';
+        const disabled = !state.votingOpen ? 'disabled' : '';
         const cardCls = hasSaved ? 'card saved' : 'card';
+        const hc = heatClass(inputVal);
+        const chipsHtml = presets.map(p =>
+          '<button class="chip" type="button" data-preset="' + p + '" ' + disabled + '>' + p + '</button>'
+        ).join('');
         return `
-          <div class="${cardCls}" data-cid="${escapeHtml(c.id)}">
+          <div class="${cardCls}" data-cid="${escapeHtml(c.id)}" style="animation-delay:${Math.min(idx * 30, 300)}ms">
             <div class="card-head">
               <div>
                 <div class="contestant-name">${escapeHtml(c.name)}</div>
@@ -743,15 +1232,16 @@
             </div>
             <div class="score-row">
               <input type="number" inputmode="numeric" min="${state.minScore}" max="${state.maxScore}"
-                     value="${escapeHtml(inputVal)}" data-score
-                     aria-label="Score for ${escapeHtml(c.name)}" ${btnDisabled} />
+                     value="${escapeHtml(inputVal)}" data-score class="${hc}"
+                     aria-label="Score for ${escapeHtml(c.name)}" ${disabled} />
               <div class="stepper" aria-hidden="true">
-                <button type="button" data-step="1" ${btnDisabled}>▲</button>
-                <button type="button" data-step="-1" ${btnDisabled}>▼</button>
+                <button type="button" data-step="1" ${disabled}>▲</button>
+                <button type="button" data-step="-1" ${disabled}>▼</button>
               </div>
-              <button class="btn" data-save ${btnDisabled}>${btnLabel}</button>
+              <button class="btn primary-strong" data-save ${disabled}>${btnLabel}</button>
             </div>
-            <div class="hint">Range ${state.minScore}–${state.maxScore}. Scores save individually.</div>
+            <div class="chips">${chipsHtml}</div>
+            <div class="hint">Range ${state.minScore}–${state.maxScore}. Tap a chip to fill. Press Enter to save.</div>
             <div class="card-msg" data-msg></div>
           </div>`;
       }).join('');
@@ -766,9 +1256,11 @@
         const saveBtn = card.querySelector('[data-save]');
         const stepUp = card.querySelector('[data-step="1"]');
         const stepDn = card.querySelector('[data-step="-1"]');
+        const chips = card.querySelectorAll('[data-preset]');
 
         input.addEventListener('input', () => {
           state.uiScores[cid] = input.value;
+          input.className = (input.className.replace(/\s*heat-\w+/g, '').trim()) + ' ' + heatClass(input.value);
         });
         input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
@@ -776,6 +1268,16 @@
         saveBtn.addEventListener('click', () => onSaveClick(cid));
         if (stepUp) stepUp.addEventListener('click', () => stepInput(input, 1));
         if (stepDn) stepDn.addEventListener('click', () => stepInput(input, -1));
+        chips.forEach(chip => {
+          chip.addEventListener('click', () => {
+            if (chip.disabled) return;
+            const v = Number(chip.getAttribute('data-preset'));
+            input.value = v;
+            state.uiScores[cid] = String(v);
+            input.className = (input.className.replace(/\s*heat-\w+/g, '').trim()) + ' ' + heatClass(String(v));
+            input.focus();
+          });
+        });
       });
     }
 
@@ -809,17 +1311,13 @@
       }
     }
 
-    // minimal CSS escape for attribute selectors
-    function cssEscape(s) {
-      return String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
-    }
-
     // ============================================================
     // Save handlers
     // ============================================================
     async function onSaveClick(cid) {
       if (!state.votingOpen) {
         setCardStatus(cid, 'error', 'Voting is closed.', 'error');
+        toast('Voting is closed — score not saved.', 'error');
         return;
       }
       const card = document.querySelector('.card[data-cid="' + cssEscape(cid) + '"]');
@@ -840,9 +1338,7 @@
       }
       const hadExisting = state.votes[cid] !== undefined && state.votes[cid] !== null;
       setCardStatus(cid, hadExisting ? 'updating' : 'saving', '', null);
-      // disable save button while in-flight
       const saveBtn = card.querySelector('[data-save]');
-      const original = saveBtn.textContent;
       saveBtn.disabled = true;
 
       const res = await saveVoteWithRetry(state.judgeId, cid, score, state.password);
@@ -850,15 +1346,18 @@
 
       if (res.ok) {
         const r = res.response;
+        const isNew = r.action === 'inserted';
         state.votes[cid] = r.score !== undefined ? r.score : score;
         state.uiScores[cid] = String(state.votes[cid]);
         input.value = state.uiScores[cid];
-        setCardStatus(cid, 'saved', r.action === 'updated' ? 'Score updated.' : 'Score saved.', 'success');
+        setCardStatus(cid, 'saved', isNew ? 'Score saved.' : 'Score updated.', 'success');
         saveBtn.textContent = 'Update Score';
+        toast((isNew ? 'Saved ' : 'Updated ') + cid + ' = ' + state.votes[cid], 'success');
         updateProgress();
+        refreshStats();
       } else {
         setCardStatus(cid, 'error', res.error || 'Save failed.', 'error');
-        // keep button label consistent with server state
+        toast(res.error || 'Save failed for ' + cid, 'error');
         saveBtn.textContent = (state.votes[cid] !== undefined && state.votes[cid] !== null) ? 'Update Score' : 'Save Score';
       }
     }
@@ -871,7 +1370,7 @@
         return ui && ui !== '' && (!has || Number(ui) !== Number(state.votes[c.id]));
       });
       if (!pending.length) {
-        flashToolbar('No pending changes.');
+        toast('No pending changes.', 'info', 1800);
         return;
       }
       $('#saveAllBtn').disabled = true;
@@ -884,16 +1383,8 @@
       $('#saveAllBtn').textContent = original;
     }
 
-    function flashToolbar(msg) {
-      const r = $('.toolbar .right');
-      if (!r) return;
-      const prev = r.textContent;
-      r.textContent = msg;
-      setTimeout(() => { r.textContent = prev; }, 1600);
-    }
-
     // ============================================================
-    // Progress
+    // Progress + stats
     // ============================================================
     function updateProgress() {
       const total = state.contestants.length;
@@ -903,7 +1394,35 @@
       });
       $('#progressLabel').textContent = scored + ' / ' + total + ' contestants scored';
       const pct = total > 0 ? Math.round((scored / total) * 100) : 0;
-      $('#progressFill').style.width = pct + '%';
+      $('#progressPct').textContent = pct + '%';
+      const fill = $('#progressFill');
+      fill.style.width = pct + '%';
+      fill.classList.toggle('complete', pct === 100 && total > 0);
+      // Celebration on 100% completion
+      if (pct === 100 && total > 0 && !state.celebrated) {
+        state.celebrated = true;
+        celebrate();
+        toast('All contestants scored. Great work!', 'success', 4000);
+      }
+      if (pct < 100) state.celebrated = false;
+    }
+
+    async function refreshStats() {
+      if (!state.judgeId || !state.password) return;
+      try {
+        const r = await apiGet({ action: 'judgeStats', judgeId: state.judgeId, password: state.password });
+        if (r && r.ok) {
+          state.stats = {
+            scored: r.scored, total: r.total, average: r.average,
+            highest: r.highest, lowest: r.lowest,
+            complete: r.complete, progressPct: r.progressPct
+          };
+          $('#statAvg').textContent = r.average === null ? '—' : r.average;
+          $('#statHi').textContent = r.highest === null ? '—' : r.highest;
+          $('#statLo').textContent = r.lowest === null ? '—' : r.lowest;
+          $('#statRem').textContent = r.remaining;
+        }
+      } catch (e) { /* silent — stats are non-critical */ }
     }
 
     // ============================================================
@@ -920,17 +1439,17 @@
           state.judgeName = r.judgeName || state.judgeName;
           state.votes = r.votes || {};
           $('#judgeNameLabel').textContent = state.judgeName ? '· ' + state.judgeName : '';
-          // clear stale UI scores so they reflect server truth
           state.uiScores = {};
           await loadStatusAndContestants();
           renderContestants();
           updateProgress();
-          flashToolbar('Refreshed from Google Sheets.');
+          refreshStats();
+          toast('Refreshed from Google Sheets.', 'success', 1800);
         } else {
-          flashToolbar((r && r.error) || 'Refresh failed.');
+          toast((r && r.error) || 'Refresh failed.', 'error');
         }
       } catch (e) {
-        flashToolbar(e.message || 'Network error.');
+        toast(e.message || 'Network error.', 'error');
       } finally {
         btn.disabled = false;
         btn.textContent = original;
@@ -941,6 +1460,9 @@
     // Logout
     // ============================================================
     function handleLogout() {
+      if (hasUnsavedChanges()) {
+        if (!confirm('You have unsaved score changes. Log out anyway?')) return;
+      }
       clearCreds();
       state.judgeId = null;
       state.password = null;
@@ -948,6 +1470,7 @@
       state.votes = {};
       state.uiScores = {};
       state.statuses = {};
+      state.celebrated = false;
       $('#dashView').classList.add('hidden');
       $('#authView').classList.remove('hidden');
       $('#loginForm').reset();
@@ -961,13 +1484,27 @@
       $('#logoutBtn').addEventListener('click', handleLogout);
       $('#refreshBtn').addEventListener('click', handleRefresh);
       $('#saveAllBtn').addEventListener('click', saveAllPending);
+      $('#themeBtn').addEventListener('click', toggleTheme);
+
+      $('#searchInput').addEventListener('input', (e) => {
+        state.search = e.target.value;
+        renderContestants();
+      });
+      $('#sortSelect').addEventListener('change', (e) => {
+        state.sort = e.target.value;
+        renderContestants();
+      });
+      $('#unscoredOnly').addEventListener('click', () => {
+        state.unscoredOnly = !state.unscoredOnly;
+        $('#unscoredOnly').classList.toggle('active', state.unscoredOnly);
+        renderContestants();
+      });
     }
 
     async function tryRestoreSession() {
       const creds = loadCreds();
       if (!creds) return;
       $('#judgeId').value = creds.judgeId;
-      // attempt silent login
       try {
         const r = await apiGet({ action: 'myVotes', judgeId: creds.judgeId, password: creds.password });
         if (r && r.ok) {
@@ -981,8 +1518,8 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      loadTheme();
       bindStaticEvents();
-      // try restore session silently
       tryRestoreSession();
     });
   </script>

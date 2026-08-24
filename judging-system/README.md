@@ -184,7 +184,8 @@ No build step. No dependencies. It just works.
 All requests go to the single `/exec` URL.
 
 ### `GET ?action=status`
-Public. Returns score range and whether voting is open.
+Public. Returns score range, voting-open flag, active judge/contestant counts,
+and server time.
 
 ### `GET ?action=contestants`
 Returns active contestants only.
@@ -192,6 +193,11 @@ Returns active contestants only.
 ### `GET ?action=myVotes&judgeId=...&password=...`
 Authenticates the judge and returns `{ contestantId: score }` for that judge
 only, plus the judge's current name from the sheet.
+
+### `GET ?action=judgeStats&judgeId=...&password=...`
+Authenticates the judge and returns their personal aggregate stats:
+`scored`, `total`, `remaining`, `average`, `highest`, `lowest`, `complete`,
+`progressPct`. Never reveals other judges' data.
 
 ### `GET ?action=results`
 When `SHOW_LIVE_RESULTS = false` returns `{ ok:false, hidden:true }`. When
@@ -202,6 +208,30 @@ scores.
 Body: `{ action: 'saveVote', judgeId, contestantId, score, password }`.
 Validates in spec order, then upserts the vote inside a
 `LockService.getScriptLock()`.
+
+---
+
+## Frontend features
+
+- **Login** with Judge ID + shared password (session-only credential storage)
+- **Dashboard** with judge name from Google Sheets (fresh on every login/refresh)
+- **Per-contestant cards** with individual Save/Update buttons and status badges
+  (Not scored / Saving… / Saved / Updating… / Error)
+- **Progress bar** + percentage, computed from server truth
+- **Personal stats strip** — average, highest, lowest, remaining
+- **Quick-score chips** — tap-to-fill preset scores derived from the configured
+  range (mobile friendly)
+- **Score heatmap** — input tints red/amber/green based on value position in range
+- **Search** contestants by name or ID
+- **Sort** by unscored-first / name / score ascending / score descending
+- **Unscored-only filter** toggle
+- **Save all pending** bulk action
+- **Toast notifications** for save results
+- **Completion celebration** (confetti) when every active contestant is scored
+- **Unsaved-changes guard** — warns before logout/refresh when inputs differ
+  from saved scores
+- **Dark mode** toggle (persisted to localStorage)
+- **Mobile-first responsive** design with safe-area insets and sticky footer
 
 ---
 

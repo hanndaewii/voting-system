@@ -146,3 +146,64 @@ Task: Final report (see chat output).
 
 Stage Summary:
 - 35/35 spec tests pass. 20 browser E2E checks pass. Round-trip workflow verified live. GO recommendation.
+
+---
+Task ID: 10 (webDevReview round 1)
+Agent: webDevReview
+Task: QA baseline + new features + styling improvements.
+
+Work Log:
+- Read worklog; project was feature-complete and stable (35/35 tests).
+- Ran QA baseline: 35/35 tests passed, mock server + browser smoke test OK.
+
+NEW BACKEND FEATURES (Code.gs):
+- New `GET ?action=judgeStats` endpoint: returns the logged-in judge's personal aggregates (scored, total, remaining, average, highest, lowest, complete, progressPct). Auth-gated; never leaks other judges' data.
+- Enriched `GET ?action=status`: now also returns activeJudges, activeContestants, serverTime. Backward-compatible (all old fields still present).
+- New helper countActiveJudges_().
+- Added 5 new tests: STATS-1..4 (judgeStats correctness/privacy/auth/complete-flag) and STATUS-1 (enriched status). Total tests: 40/40 PASS.
+
+NEW FRONTEND FEATURES (index.html — full rewrite, ~1240 lines):
+- Dark mode toggle (persisted to localStorage via jv_theme key; data-theme attribute on <html>).
+- Personal stats strip: Average | Highest | Lowest | Remaining tiles, fed by judgeStats endpoint.
+- Quick-score chips: 5 preset buttons per card derived from min/max score range (tap to fill input).
+- Score heatmap: input tints red/amber/green based on value position in range (heat-low/mid/high classes).
+- Search contestants by name or ID (filters grid live).
+- Sort dropdown: Unscored first / Name A→Z / Score low→high / Score high→low.
+- "Unscored only" filter toggle chip.
+- Toast notification system (slide-in, auto-dismiss, dismiss button) for save success/error/info.
+- Completion celebration: confetti overlay + banner when judge scores 100% of active contestants (fires once per session; auto-hides after 3.8s).
+- Unsaved-changes guard: beforeunload handler + confirm() dialog on logout when inputs differ from saved scores.
+- Enter key saves score from within input.
+
+STYLING IMPROVEMENTS:
+- Full dark theme via CSS variable overrides on [data-theme="dark"].
+- Gradient accents: auth-card top bar, dashboard left edge, progress bar shimmer animation, primary button gradient.
+- Card entrance animation (staggered fade-up), hover lift with shadow.
+- Branded pulsing brand-dot, refined badge/border colors per theme.
+- Toast stack with slide-in/out animations.
+- Safe-area insets (env(safe-area-inset-bottom/top)) for iOS notch devices.
+- Sticky footer preserved: verified footerBottom==viewport on short login screen, pushed down naturally on long dashboard.
+- Refined typography, focus rings, skeleton shimmer.
+
+BROWSER E2E VERIFICATION (all passed):
+- Login + dashboard render with all new controls.
+- Dark mode toggles light→dark→light correctly; screenshots captured (light + dark, mobile).
+- Quick-score chip "75" fills input, heatmap class applies (heat-high for 75, heat-low for 20, heat-mid for 50).
+- Save shows toast "Saved C001 = 75", badge "✓ Saved", stats update live (avg/hi/lo/rem/pct).
+- Search "Maria"→C002 only, "ana"→C004 only, "zzz"→empty state, clear→all 4 cards.
+- Unscored-only toggle filters correctly.
+- Sort by name gives alphabetical order.
+- Scoring all contestants triggers CELEBRATION (confetti shown, auto-hidden), progress "4 / 4 | 100%", stats populated.
+- Unsaved-changes: confirm=false blocks logout (stays logged in), confirm=true proceeds, no-changes logout proceeds immediately.
+- Round-trip regression: save 85 → update to 90 → reload → value 90 + "✓ Saved" + server myVotes returns {"C001":90}.
+- No JS console errors.
+
+BUGS FOUND AND FIXED:
+- Test-tooling only: agent-browser eval with bare `return` outside a function threw SyntaxError ("Illegal return statement") which initially made logout look broken; re-tested with IIFE wrappers — logout works correctly in all 3 scenarios. No app bugs found this round.
+
+Stage Summary:
+- 40/40 tests pass (35 original + 5 new). All new features verified in-browser.
+- Known risks: celebration uses CSS animations only (no audio); beforeunload guard is best-effort (browsers may not show custom text); dark theme persists per-browser via localStorage (not synced to Google account).
+
+Recommended next phase:
+- Optional: "Export my scores" (printable/PDF view), keyboard shortcut overlay, undo-last-save, organizer dashboard route (read-only aggregate view when SHOW_LIVE_RESULTS=true).
