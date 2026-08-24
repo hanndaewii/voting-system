@@ -538,3 +538,68 @@ Stage Summary:
 
 Recommended next phase:
 - Optional: CSV import file-picker (drag & drop .csv file instead of paste), sound-effects toggle, ARIA/screen-reader audit of new note/org UI, localization (fil/es), export judge-notes review as PDF for deliberation meetings, per-judge notes anonymization toggle in the organizer panel.
+
+---
+Task ID: 80 (webDevReview round 8)
+Agent: webDevReview
+Task: QA baseline + Organizer Deliberation Toolkit (anonymize judges, notes export TSV/print, CSV file-picker + drag & drop) + styling polish.
+
+Work Log:
+- Read worklog; project stable at 62/62 tests from round 7.
+- QA BASELINE: 62/62 unit tests. Browser smoke: session restore, score save (75 on C004 verified server-side), organizer view with 5 result rows + tools card, zero console errors.
+- INFRA NOTE: navigating to a URL that differs only by hash does NOT reload the page — after editing index.html always use `agent-browser reload` (the SW network-first shell otherwise keeps the old DOM and new elements appear "missing").
+
+NEW FEATURES (all frontend; Code.gs untouched at 974 lines):
+
+1. ANONYMIZE JUDGES TOGGLE (blind deliberation):
+   - New toggle chip in the notes review ("Anonymize judges", shield icon). Replaces judge names with stable "Judge A / Judge B / C…" labels derived from ALL entries sorted by judgeId (same judge keeps the same letter across re-renders and contestants); avatar shows the letter instead of initials; avatar color (hue from judgeId) stays consistent per judge so blind deliberation can still track entries without names. Scores/timestamps remain visible.
+   - Preference persisted to localStorage (jv_org_anon), restored on load; notes re-render instantly from cached state.orgNotesData (no refetch). Summary row gains a "🕶 judges anonymized" chip when active.
+
+2. NOTES SUMMARY CHIPS:
+   - New chips row above the notes list: total notes / distinct judges / contestants, computed from the loaded data (aria-live).
+
+3. COPY NOTES AS TSV:
+   - New "⧉ Copy TSV" button — copies every note as tab-separated rows (Contestant ID / Contestant Name / Judge / Score / Note / Timestamp), newlines/tabs inside cells collapsed to spaces, respects the anonymize toggle (Judge A/B labels in the export), clipboard API with hidden-textarea execCommand fallback.
+
+4. PRINT NOTES (deliberation sheet):
+   - New "🖨 Print" button — fills a hidden print header ("📋 Judge Notes — Deliberation Sheet · Generated <date> · N notes · M contestants [· judges anonymized]"), expands every accordion group, adds body.print-notes, calls window.print(), and cleans up via afterprint + a 2s fallback timer.
+   - Dedicated @media print rules under body.print-notes show ONLY the notes list: hides topbar/footer/tabbar/results card/import tool/card headers, unsets the list max-height, forces all groups open with break-inside:avoid, prints clean black-on-white with bordered groups. Verified by generating actual PDFs (agent-browser pdf) in both named and anonymized modes — content confirmed via pdftotext.
+
+5. CSV FILE-PICKER + DRAG & DROP:
+   - New drop zone above the import textarea ("Drop a .csv file here or Browse…") with hidden file input (accept .csv/.txt). Click Browse → file picker; dragenter/dragover adds a solid teal .drag state, dragleave/drop clears it; drop reads the first file. The whole import area (including the textarea) accepts drops.
+   - readRosterFile(): validates extension (.csv/.txt only — .html rejected with an error toast), strips UTF-8 BOM, trims, fills the textarea, clears stale results, focuses for review. Import then proceeds through the existing per-line-validated pipeline.
+
+PRIVACY HARDENING:
+- lockOrganizerTools() and resetOrganizerTools() now clear state.orgNotesData and reset the notes list + summary — sensitive judge notes no longer sit in memory after locking the tools.
+
+STYLING (mandatory polish):
+- .drop-zone: dashed border → solid teal on drag with background tint and icon lift; compact Browse button (32px).
+- .notes-summary chips: card-soft pills with tabular-nums, strong values; anon chip in info-blue.
+- .toggle-chip.active#orgAnonToggle info-blue active state.
+- Print header styles + full body.print-notes print stylesheet (see above).
+- Clear button also resets the file input.
+
+BROWSER E2E VERIFICATION (all passed, zero JS console errors):
+- Summary chips: "3 notes | 2 judges | 2 contestants" for the seeded data.
+- Anonymize: "Judge Two"/"JT" → "Judge B"/"B" instantly; group 2 shows Judge A + Judge B (stable mapping JUDGE-01→A, JUDGE-02→B); toggle active + localStorage "1"; persisted across reload (first judge renders as "Judge B" with toggle active).
+- Copy TSV: anonymized export shows Judge A/B labels; after toggling off, export shows real names ("Judge Two"). Header + all 3 rows tab-separated correctly.
+- Print: window.print called, body.print-notes added, header filled ("3 notes · 2 contestants"), collapsed group force-expanded, class auto-removed after cleanup; print header hidden on screen (display:none outside print media).
+- PDF render: generated real PDFs in named + anonymized modes; pdftotext confirms deliberation sheet content (notes, scores, judges) and NO "Organizer tools" chrome leak (fixed by hiding .org-tools-card .dash-title in print mode).
+- File-picker: programmatic File on the input → textarea filled with both CSV lines.
+- Drag & drop: dragenter adds .drag, drop fills textarea, drag state cleared, .html file rejected (textarea unchanged).
+- Full pipeline: dropped roster imported → "✓ 1 added" → server contestants now include C031.
+- Clear: textarea + result + file input all reset. Lock: orgNotesData cleared, list reset, summary hidden.
+- Regressions: judge-view notes still render/save (C002 "Note · saved", stat 2, C031 saved 60), tab cycling clean, no horizontal overflow.
+
+VLM VISUAL QA:
+- Org tools panel (light, unlocked + notes + summary + drop zone): 8/10 — "Excellent" layout/hierarchy, strong drop-zone integration.
+- Dark mode org tools with anonymized entries: "contrast excellent", high legibility, no issues reported.
+
+Stage Summary:
+- 62/62 unit tests pass (backend unchanged — all round 8 work is frontend).
+- index.html: 4569 → ~4780 lines. README updated (organizer tools bullets: anonymize, TSV, print sheet, file drop).
+- 5 new organizer-facing capabilities shipped, 1 privacy hardening, zero regressions.
+- Sandbox access pattern unchanged: mock server on 0.0.0.0:8788 (SHOW_LIVE=true, judge pw 'sharedpw', organizer key 'orgpw'), browse http://localhost:81/?XTransformPort=8788.
+
+Recommended next phase:
+- Optional: sound effects toggle, ARIA/screen-reader audit pass over the notes/org UI, localization (fil/es), judge-side "my notes digest" print view, per-contestant note-required option (organizer setting), CSV import dry-run preview before committing.

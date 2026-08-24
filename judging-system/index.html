@@ -1590,6 +1590,76 @@
       outline: none; transition: border-color .15s, box-shadow .15s;
     }
     .org-import-area textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(45,212,191,.14); }
+    .drop-zone {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 10px 13px; margin-bottom: 10px;
+      border: 1.5px dashed var(--border-strong); border-radius: var(--radius-sm);
+      background: var(--card-soft); color: var(--text-muted);
+      font-size: 12.5px; font-weight: 600;
+      transition: border-color .15s, background .15s, color .15s;
+    }
+    .drop-zone svg { flex: 0 0 auto; color: var(--text-muted); transition: transform .2s, color .15s; }
+    .drop-zone .dz-text { white-space: nowrap; }
+    .drop-zone:hover { border-color: var(--text-muted); color: var(--text); }
+    .drop-zone.drag {
+      border-color: var(--primary); border-style: solid;
+      background: rgba(45,212,191,.09); color: var(--text);
+    }
+    .drop-zone.drag svg { transform: translateY(-2px); color: var(--primary); }
+    .drop-zone .btn { height: 32px; min-height: 32px; font-size: 12px; padding: 0 12px; }
+    .org-notes-list.drag-target .drop-zone { border-color: var(--primary); }
+    .notes-summary {
+      display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 11px;
+    }
+    .notes-summary.hidden { display: none; }
+    .ns-chip {
+      display: inline-flex; align-items: baseline; gap: 4px;
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      background: var(--card-soft); border: 1px solid var(--border);
+      border-radius: 999px; padding: 3px 11px;
+      font-variant-numeric: tabular-nums;
+    }
+    .ns-chip strong { color: var(--text); font-size: 12px; }
+    .ns-chip.anon { color: var(--info); border-color: rgba(14,165,233,.4); background: var(--info-soft); }
+    .toggle-chip.active#orgAnonToggle { color: var(--info); }
+    .notes-print-header { display: none; }
+    .notes-print-header h2 { margin: 0 0 2px; font-size: 19px; }
+    .notes-print-header .nph-meta { font-size: 11px; color: #555; }
+    @media print {
+      /* "Print notes" deliberation-sheet mode: show ONLY the notes review */
+      body.print-notes header.topbar,
+      body.print-notes footer.site,
+      body.print-notes .tabbar,
+      body.print-notes #authView,
+      body.print-notes #dashView,
+      body.print-notes .org-card:not(.org-tools-card),
+      body.print-notes .ot-actions,
+      body.print-notes .notes-summary,
+      body.print-notes #orgImportTool,
+      body.print-notes .org-key-row,
+      body.print-notes #orgKeyHint,
+      body.print-notes .dash-actions { display: none !important; }
+      body.print-notes .org-tools-card {
+        display: block !important; box-shadow: none !important;
+        border: 0 !important; padding: 0 !important; margin: 0 !important;
+        background: transparent !important;
+      }
+      body.print-notes .org-tools-card .dash-title { display: none !important; }
+      body.print-notes .org-tools-grid { display: block !important; }
+      body.print-notes .org-tool {
+        border: 0 !important; padding: 0 !important; background: transparent !important;
+      }
+      body.print-notes .org-tool > h3,
+      body.print-notes .org-tool .ot-sub { display: none !important; }
+      body.print-notes .notes-print-header { display: block !important; margin-bottom: 14px; }
+      body.print-notes .org-notes-list { max-height: none !important; overflow: visible !important; }
+      body.print-notes .org-note-group {
+        border: 1px solid #999 !important; break-inside: avoid; margin-bottom: 8px;
+      }
+      body.print-notes .ong-entries { display: block !important; }
+      body.print-notes .ong-caret { display: none !important; }
+      body.print-notes .org-note-group > button.ong-head { background: #eee !important; color: #000 !important; }
+    }
     .org-import-result { margin-top: 10px; font-size: 12.5px; }
     .org-import-result .oir-line { display: flex; gap: 8px; align-items: baseline; padding: 2px 0; }
     .org-import-result .ok { color: var(--success); font-weight: 700; }
@@ -1905,20 +1975,34 @@
 
           <div class="hidden" id="orgToolsBody">
             <div class="org-tools-grid">
-              <div class="org-tool">
+              <div class="org-tool" id="orgNotesTool">
                 <h3>📝 Judge notes</h3>
                 <div class="ot-sub">Every note left by the judges, grouped by contestant — for post-voting deliberation.</div>
                 <div class="ot-actions">
                   <button class="btn subtle" id="orgNotesBtn" type="button">↻ Load notes</button>
+                  <button class="toggle-chip" id="orgAnonToggle" type="button" title="Replace judge names with Judge A/B/C… for blind deliberation (colors stay consistent per judge)">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                    Anonymize judges
+                  </button>
+                  <button class="btn subtle" id="orgNotesCopyBtn" type="button" title="Copy all notes as TSV — pastes directly into Google Sheets">⧉ Copy TSV</button>
+                  <button class="btn subtle" id="orgNotesPrintBtn" type="button" title="Print / save as PDF — one clean sheet with every note">🖨 Print</button>
                 </div>
+                <div class="notes-summary hidden" id="orgNotesSummary" aria-live="polite"></div>
+                <div class="notes-print-header" id="notesPrintHeader"></div>
                 <div class="org-notes-list" id="orgNotesList">
                   <div class="ot-sub" style="margin:0;">No notes loaded yet.</div>
                 </div>
               </div>
-              <div class="org-tool">
+              <div class="org-tool" id="orgImportTool">
                 <h3>📥 CSV roster import</h3>
                 <div class="ot-sub">One record per line: <code>contestant,ID,Name,active</code> or <code>judge,ID,Name,active</code>. Existing IDs are updated in place; new IDs are appended. The active flag is optional (default true). Names must not contain commas.</div>
-                <div class="org-import-area">
+                <div class="org-import-area" id="orgImportArea">
+                  <div class="drop-zone" id="orgDropZone">
+                    <input type="file" id="orgCsvFile" accept=".csv,.txt,text/csv,text/plain" hidden />
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span class="dz-text">Drop a .csv file here or</span>
+                    <button class="btn subtle" id="orgChooseFileBtn" type="button">Browse…</button>
+                  </div>
                   <textarea id="orgImportCsv" rows="6" spellcheck="false" placeholder="contestant,C010,Nina New,true&#10;judge,JUDGE-10,Fourth Judge,true&#10;contestant,C011,Retired Act,false"></textarea>
                 </div>
                 <div class="ot-actions" style="margin-top:10px;">
@@ -2048,6 +2132,7 @@
 
     const SS_KEY = 'jv_creds';
     const SS_ORG_KEY = 'jv_org_key';
+    const LS_ORG_ANON = 'jv_org_anon';
     const THEME_KEY = 'jv_theme';
     const TOUR_KEY = 'jv_tour_done';
     const RETRYABLE_HINTS = [
@@ -2071,6 +2156,8 @@
       notesOpen: {},           // { contestantId: true } note editor expanded
       notesOnly: false,        // toolbar filter: only cards with notes
       orgKey: null,            // organizer key (sessionStorage-backed)
+      orgNotesData: null,       // last judgeNotes response (for toggle re-render + export)
+      orgAnonymize: false,      // notes review: replace judge names with Judge A/B/C…
       uiScores: {},
       statuses: {},
       votingOpen: true,
@@ -4356,7 +4443,69 @@
       $('#orgImportClearBtn').addEventListener('click', () => {
         $('#orgImportCsv').value = '';
         $('#orgImportResult').innerHTML = '';
+        $('#orgCsvFile').value = '';
         $('#orgImportCsv').focus();
+      });
+
+      // Anonymize judges toggle — persisted, re-renders from cached data
+      state.orgAnonymize = (() => {
+        try { return localStorage.getItem(LS_ORG_ANON) === '1'; } catch (e) { return false; }
+      })();
+      const anonBtn = $('#orgAnonToggle');
+      anonBtn.classList.toggle('active', state.orgAnonymize);
+      anonBtn.addEventListener('click', () => {
+        state.orgAnonymize = !state.orgAnonymize;
+        try { localStorage.setItem(LS_ORG_ANON, state.orgAnonymize ? '1' : '0'); } catch (e) {}
+        anonBtn.classList.toggle('active', state.orgAnonymize);
+        if (state.orgNotesData) {
+          renderOrganizerNotes(state.orgNotesData);
+          toast(state.orgAnonymize ? 'Judges anonymized — showing Judge A, B, C…' : 'Showing real judge names.', 'info', 2400);
+        } else {
+          toast(state.orgAnonymize ? 'Anonymize on — load notes to apply.' : 'Anonymize off.', 'info', 2000);
+        }
+      });
+
+      // Notes review export
+      $('#orgNotesCopyBtn').addEventListener('click', copyNotesTsv);
+      $('#orgNotesPrintBtn').addEventListener('click', printNotesReview);
+
+      // CSV file-picker + drag & drop
+      $('#orgChooseFileBtn').addEventListener('click', () => $('#orgCsvFile').click());
+      $('#orgCsvFile').addEventListener('change', (e) => {
+        readRosterFile(e.target.files && e.target.files[0]);
+      });
+      const dz = $('#orgDropZone');
+      ['dragenter', 'dragover'].forEach(ev => {
+        dz.addEventListener(ev, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dz.classList.add('drag');
+        });
+      });
+      ['dragleave', 'dragend'].forEach(ev => {
+        dz.addEventListener(ev, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dz.classList.remove('drag');
+        });
+      });
+      dz.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dz.classList.remove('drag');
+        const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        readRosterFile(f);
+      });
+      // Dropping anywhere on the import area (incl. the textarea) works too
+      const importArea = $('#orgImportArea');
+      importArea.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.add('drag'); });
+      importArea.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('drag'); });
+      importArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dz.classList.remove('drag');
+        const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) readRosterFile(f);
       });
 
       document.addEventListener('keydown', handleGlobalKeydown);
@@ -4378,6 +4527,7 @@
     }
     function lockOrganizerTools() {
       state.orgKey = null;
+      state.orgNotesData = null; // don't keep sensitive notes in memory after locking
       try { sessionStorage.removeItem(SS_ORG_KEY); } catch (e) {}
       $('#orgToolsBody').classList.add('hidden');
       $('#orgUnlockedBadge').classList.add('hidden');
@@ -4385,11 +4535,14 @@
       btn.textContent = '🔑 Unlock tools';
       btn.title = 'Enter the organizer key';
       $('#orgNotesList').innerHTML = '<div class="ot-sub" style="margin:0;">No notes loaded yet.</div>';
+      $('#orgNotesSummary').classList.add('hidden');
+      $('#orgNotesSummary').innerHTML = '';
       $('#orgImportResult').innerHTML = '';
       toast('Organizer tools locked.', 'info', 2200);
     }
     function resetOrganizerTools() {
       state.orgKey = null;
+      state.orgNotesData = null;
       try { sessionStorage.removeItem(SS_ORG_KEY); } catch (e) {}
       $('#orgToolsBody').classList.add('hidden');
       $('#orgUnlockedBadge').classList.add('hidden');
@@ -4399,6 +4552,8 @@
       if (btn) { btn.textContent = '🔑 Unlock tools'; btn.title = 'Enter the organizer key'; }
       const list = $('#orgNotesList');
       if (list) list.innerHTML = '<div class="ot-sub" style="margin:0;">No notes loaded yet.</div>';
+      const sum = $('#orgNotesSummary');
+      if (sum) { sum.classList.add('hidden'); sum.innerHTML = ''; }
       const res = $('#orgImportResult');
       if (res) res.innerHTML = '';
     }
@@ -4434,23 +4589,69 @@
         btn.textContent = original;
       }
     }
+    /**
+     * Stable anonymized labels ("Judge A", "Judge B", …) for the notes review.
+     * Mapping is derived from ALL entries sorted by judgeId, so a judge keeps
+     * the same letter across re-renders and contestants while their real name
+     * stays hidden. Colors (hue from judgeId) remain consistent per judge so
+     * blind deliberation can still track who said what.
+     */
+    function anonLabelsMap(data) {
+      const ids = {};
+      ((data && data.notes) || []).forEach(g => {
+        g.entries.forEach(en => { ids[en.judgeId] = true; });
+      });
+      const sorted = Object.keys(ids).sort();
+      const map = {};
+      sorted.forEach((id, i) => {
+        const label = i < 26 ? String.fromCharCode(65 + i) : String(i + 1);
+        map[id] = 'Judge ' + label;
+      });
+      return map;
+    }
+
+    /** Summary chips above the notes list: total notes / judges / contestants. */
+    function updateNotesSummary(r) {
+      const el = $('#orgNotesSummary');
+      if (!el) return;
+      const groups = (r && r.notes) || [];
+      if (!groups.length) {
+        el.classList.add('hidden');
+        el.innerHTML = '';
+        return;
+      }
+      const judges = {};
+      let total = 0;
+      groups.forEach(g => g.entries.forEach(en => { judges[en.judgeId] = true; total++; }));
+      el.classList.remove('hidden');
+      el.innerHTML =
+        '<span class="ns-chip"><strong>' + total + '</strong> notes</span>' +
+        '<span class="ns-chip"><strong>' + Object.keys(judges).length + '</strong> judges</span>' +
+        '<span class="ns-chip"><strong>' + groups.length + '</strong> contestants</span>' +
+        (state.orgAnonymize ? '<span class="ns-chip anon">🕶 judges anonymized</span>' : '');
+    }
+
     function renderOrganizerNotes(r) {
+      state.orgNotesData = r; // kept for anonymize re-render + TSV/print export
       const list = $('#orgNotesList');
       const groups = (r && r.notes) || [];
+      updateNotesSummary(r);
       if (!groups.length) {
         list.innerHTML = '<div class="ot-sub" style="margin:0;">No judge notes yet. Notes appear here once judges start writing them.</div>';
         return;
       }
+      const anon = state.orgAnonymize ? anonLabelsMap(r) : null;
       list.innerHTML = groups.map((g, gi) => {
         const entries = g.entries.map(en => {
-          const initials = initialsOf(en.judgeName);
+          const display = anon ? anon[en.judgeId] : en.judgeName;
+          const initials = anon ? display.replace('Judge ', '') : initialsOf(en.judgeName);
           const hue = hueFromString(en.judgeId);
           const t = en.timestamp ? relativeTime(en.timestamp) : '';
           return '<div class="org-note-entry">' +
             '<span class="avatar" style="--h:' + hue + '" aria-hidden="true">' + escapeHtml(initials) + '</span>' +
             '<div class="one-body">' +
               '<div class="one-head">' +
-                '<span class="one-judge">' + escapeHtml(en.judgeName) + '</span>' +
+                '<span class="one-judge">' + escapeHtml(display) + '</span>' +
                 '<span class="one-score">' + escapeHtml(String(en.score)) + '</span>' +
                 (t ? '<span class="one-time" title="' + escapeHtml(en.timestamp) + '">' + escapeHtml(t) + '</span>' : '') +
               '</div>' +
@@ -4476,6 +4677,116 @@
           head.setAttribute('aria-expanded', open ? 'true' : 'false');
         });
       });
+    }
+
+    /** Copy the loaded notes review as TSV (respects the anonymize toggle). */
+    async function copyNotesTsv() {
+      const data = state.orgNotesData;
+      const groups = (data && data.notes) || [];
+      if (!groups.length) {
+        toast('Load notes first.', 'error', 2400);
+        return;
+      }
+      const anon = state.orgAnonymize ? anonLabelsMap(data) : null;
+      const lines = ['Contestant ID\tContestant Name\tJudge\tScore\tNote\tTimestamp'];
+      groups.forEach(g => {
+        g.entries.forEach(en => {
+          const judge = anon ? anon[en.judgeId] : en.judgeName;
+          const cells = [g.contestantId, g.contestantName, judge, en.score, en.note, en.timestamp]
+            .map(v => String(v === null || v === undefined ? '' : v).replace(/[\t\r\n]+/g, ' '));
+          lines.push(cells.join('\t'));
+        });
+      });
+      const tsv = lines.join('\n');
+      let ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(tsv);
+          ok = true;
+        }
+      } catch (e) { /* fall back to execCommand */ }
+      if (!ok) {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = tsv;
+          ta.setAttribute('readonly', '');
+          ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+          document.body.appendChild(ta);
+          ta.select();
+          ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+        } catch (e) { ok = false; }
+      }
+      if (ok) toast('Copied ' + (lines.length - 1) + ' notes as TSV.', 'success', 2400);
+      else toast('Copy failed.', 'error', 2600);
+    }
+
+    /**
+     * Print the notes review as a clean one-sheet deliberation document
+     * (Print → "Save as PDF" produces a shareable file). Adds body.print-notes,
+     * expands every accordion group, prints, then cleans up.
+     */
+    function printNotesReview() {
+      const data = state.orgNotesData;
+      const groups = (data && data.notes) || [];
+      if (!groups.length) {
+        toast('Load notes first.', 'error', 2400);
+        return;
+      }
+      const hdr = $('#notesPrintHeader');
+      const when = new Date().toLocaleString();
+      let noteCount = 0;
+      groups.forEach(g => noteCount += g.entries.length);
+      hdr.innerHTML = '<h2>📋 Judge Notes — Deliberation Sheet</h2>' +
+        '<div class="nph-meta">Generated ' + escapeHtml(when) + ' · ' + noteCount +
+        ' notes · ' + groups.length + ' contestants' +
+        (state.orgAnonymize ? ' · judges anonymized' : '') + '</div>';
+      // Expand all groups so the whole sheet prints
+      $$('#orgNotesList .org-note-group').forEach(g => {
+        g.classList.add('open');
+        const head = g.querySelector('.ong-head');
+        if (head) head.setAttribute('aria-expanded', 'true');
+      });
+      document.body.classList.add('print-notes');
+      let cleaned = false;
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        document.body.classList.remove('print-notes');
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      // Small delay so the browser applies the print stylesheet changes
+      setTimeout(() => {
+        window.print();
+        // Fallback cleanup for browsers that never fire afterprint
+        setTimeout(cleanup, 2000);
+      }, 120);
+    }
+
+    /**
+     * Read a roster .csv/.txt file into the import textarea. Shared by the
+     * file-picker button and the drag & drop zone. Rejects other extensions.
+     */
+    function readRosterFile(file) {
+      if (!file) return;
+      const name = String(file.name || '').toLowerCase();
+      if (!/\.(csv|txt)$/.test(name)) {
+        toast('Only .csv or .txt files can be imported.', 'error', 2800);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        let text = String(reader.result || '');
+        // Strip a UTF-8 BOM if present
+        if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+        $('#orgImportCsv').value = text.trim();
+        toast('Loaded ' + file.name + ' — review the lines, then Import.', 'success', 3000);
+        $('#orgImportResult').innerHTML = '';
+        $('#orgImportCsv').focus();
+      };
+      reader.onerror = () => toast('Could not read that file.', 'error', 2800);
+      reader.readAsText(file);
     }
     async function runRosterImport() {
       if (!state.orgKey) return;

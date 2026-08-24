@@ -360,14 +360,26 @@ script lock.
   and the note text of the last update
 - **Organizer tools panel** (Results tab) — key-gated organizer area unlocked
   with `ORGANIZER_PASSWORD` (kept in sessionStorage per tab, re-verified on
-  use, lockable with one click):
+  use, lockable with one click; locking also clears the in-memory notes):
   - **Judge notes review** — every note across all judges, grouped by
     contestant in an accordion, each entry showing judge avatar/name, score
     chip, note text, and relative timestamp — built for post-voting
-    deliberation
+    deliberation. Summary chips show the total notes / judges / contestants
+  - **Anonymize judges** toggle — replaces judge names with stable "Judge A,
+    B, C…" labels (persisted preference) for blind deliberation; avatar colors
+    stay consistent per judge so entries remain trackable without names.
+    Respected by both the TSV export and the printed sheet
+  - **Copy notes as TSV** — one click copies every note (Contestant / Judge /
+    Score / Note / Timestamp) to the clipboard as tab-separated text that
+    pastes directly into Google Sheets
+  - **Print notes (deliberation sheet)** — prints a clean one-sheet document
+    with every note expanded ("Save as PDF" produces a shareable file); the
+    header records the generation time, note count, and anonymization state
   - **CSV roster import** — paste `contestant,judge,ID,Name,active` lines to
-    batch-add or update the roster; per-line error reporting; results and
-    judge views refresh automatically after import
+    batch-add or update the roster, or **drop / browse a .csv/.txt file**
+    (drag-and-drop zone with visual feedback; BOM stripped; other extensions
+    rejected); per-line error reporting; results and judge views refresh
+    automatically after import
 
 ---
 
