@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>JUDGED VOTE — Judging System</title>
+  <style>
+    /* =========================================================
+       Design tokens
+       ========================================================= */
+    :root {
+      --bg: #0f172a;
+      --bg-soft: #1e293b;
+      --card: #ffffff;
+      --card-soft: #f8fafc;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-light: #ffffff;
+      --text-light-muted: #cbd5e1;
+      --border: #e2e8f0;
+      --primary: #0f766e;        /* deep teal (no indigo/blue) */
+      --primary-strong: #115e59;
+      --primary-fg: #ffffff;
+      --accent: #b45309;         /* amber */
+      --success: #16a34a;
+      --success-soft: #dcfce7;
+      --warning: #ca8a04;
+      --warning-soft: #fef3c7;
+      --error: #dc2626;
+      --error-soft: #fee2e2;
+      --info: #0369a1;
+      --info-soft: #e0f2fe;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --shadow: 0 10px 30px rgba(2, 6, 23, 0.12);
+      --shadow-sm: 0 2px 8px rgba(2, 6, 23, 0.08);
+      --maxw: 880px;
+      --touch: 48px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+      min-height: 100%;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* layout shell — sticky footer behaviour */
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    main {
+      flex: 1 0 auto;
+      width: 100%;
+      max-width: var(--maxw);
+      margin: 0 auto;
+      padding: 16px 16px 40px;
+    }
+
+    /* =========================================================
+       Header
+       ========================================================= */
+    header.topbar {
+      background: rgba(15, 23, 42, 0.92);
+      color: var(--text-light);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .topbar-inner {
+      max-width: var(--maxw);
+      margin: 0 auto;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      font-size: 16px;
+    }
+    .brand-dot {
+      width: 10px; height: 10px;
+      border-radius: 999px;
+      background: var(--primary);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.25);
+    }
+    .topbar-meta {
+      font-size: 12px;
+      color: var(--text-light-muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .pill.open { background: rgba(22,163,74,0.18); color: #bbf7d0; }
+    .pill.closed { background: rgba(220,38,38,0.18); color: #fecaca; }
+
+    /* =========================================================
+       Login screen
+       ========================================================= */
+    .auth-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 0 0;
+    }
+    .auth-card {
+      background: var(--card);
+      width: 100%;
+      max-width: 420px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 24px;
+    }
+    .auth-card h1 {
+      margin: 0 0 4px;
+      font-size: 22px;
+      letter-spacing: 0.4px;
+    }
+    .auth-card .sub {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin: 0 0 22px;
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    input[type="text"], input[type="password"], input[type="number"], select {
+      width: 100%;
+      height: var(--touch);
+      padding: 0 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--card-soft);
+      color: var(--text);
+      font-size: 16px; /* avoids iOS zoom */
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(15,118,110,0.15);
+      background: #fff;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: var(--touch);
+      padding: 0 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--primary);
+      color: var(--primary-fg);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .05s, background .15s, box-shadow .15s, opacity .15s;
+      box-shadow: var(--shadow-sm);
+      min-height: var(--touch);
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn:hover { background: var(--primary-strong); }
+    .btn[disabled] { opacity: .55; cursor: not-allowed; }
+    .btn.block { width: 100%; }
+    .btn.ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border); box-shadow: none; }
+    .btn.ghost:hover { background: var(--card-soft); }
+    .btn.danger { background: var(--error); }
+    .btn.danger:hover { background: #b91c1c; }
+    .btn.subtle { background: var(--card-soft); color: var(--text); border: 1.5px solid var(--border); box-shadow: none; }
+    .btn.subtle:hover { background: #f1f5f9; }
+
+    .alert {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      display: none;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .alert.show { display: flex; }
+    .alert.error { background: var(--error-soft); color: #991b1b; }
+    .alert.info { background: var(--info-soft); color: #075985; }
+    .alert.success { background: var(--success-soft); color: #166534; }
+    .alert .ic { flex: 0 0 auto; margin-top: 1px; }
+
+    /* =========================================================
+       Judge dashboard
+       ========================================================= */
+    .dash-head {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 18px 18px;
+      margin-bottom: 18px;
+    }
+    .dash-title {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+      flex-wrap: wrap;
+    }
+    .dash-title h2 { margin: 0; font-size: 18px; }
+    .dash-title .judge-name { color: var(--primary-strong); font-weight: 800; }
+    .dash-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .progress-wrap { margin-top: 14px; }
+    .progress-meta {
+      display: flex; justify-content: space-between; font-size: 12px;
+      color: var(--text-muted); margin-bottom: 6px;
+      font-weight: 700; letter-spacing: 0.3px;
+    }
+    .progress-track {
+      height: 10px; border-radius: 999px; background: var(--border); overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--primary), #14b8a6);
+      border-radius: 999px;
+      transition: width .35s ease;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 640px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 1px solid transparent;
+    }
+    .card.saved { border-color: rgba(22,163,74,0.35); }
+    .card.error { border-color: rgba(220,38,38,0.4); }
+    .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .contestant-name { font-weight: 800; font-size: 16px; line-height: 1.25; }
+    .contestant-id {
+      font-size: 11px; color: var(--text-muted);
+      letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px;
+    }
+    .badge {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+      padding: 4px 9px; border-radius: 999px; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge.notscored { background: var(--card-soft); color: var(--text-muted); }
+    .badge.saved { background: var(--success-soft); color: #166534; }
+    .badge.saving { background: var(--warning-soft); color: #854d0e; }
+    .badge.updating { background: var(--info-soft); color: #075985; }
+    .badge.error { background: var(--error-soft); color: #991b1b; }
+
+    .score-row { display: flex; gap: 8px; align-items: stretch; }
+    .score-row input[type="number"] {
+      flex: 1 1 auto; text-align: center; font-size: 18px; font-weight: 800;
+    }
+    .score-row .btn { flex: 0 0 auto; min-width: 130px; }
+    .hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .card-msg {
+      font-size: 12px;
+      display: none;
+      gap: 6px; align-items: center;
+      padding: 6px 10px; border-radius: var(--radius-sm);
+    }
+    .card-msg.show { display: flex; }
+    .card-msg.success { background: var(--success-soft); color: #166534; }
+    .card-msg.error { background: var(--error-soft); color: #991b1b; }
+    .card-msg.info { background: var(--info-soft); color: #075985; }
+    .card-msg .ic { flex: 0 0 auto; }
+
+    /* stepper buttons around the score input */
+    .stepper {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .stepper button {
+      width: 36px; height: 23px;
+      border: 1.5px solid var(--border);
+      background: var(--card-soft);
+      color: var(--text);
+      border-radius: 6px;
+      font-weight: 800; cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .stepper button:hover { background: #f1f5f9; }
+
+    /* small spinner */
+    .spin {
+      width: 14px; height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toolbar {
+      display: flex; gap: 8px; align-items: center; justify-content: space-between;
+      margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .toolbar .left { display: flex; gap: 8px; flex-wrap: wrap; }
+    .toolbar .right { color: var(--text-muted); font-size: 12px; }
+
+    /* =========================================================
+       Footer
+       ========================================================= */
+    footer.site {
+      flex-shrink: 0;
+      background: rgba(15,23,42,0.92);
+      color: var(--text-light-muted);
+      text-align: center;
+      padding: 14px 16px;
+      font-size: 12px;
+      margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    footer.site a { color: var(--text-light); text-decoration: none; font-weight: 700; }
+    footer.site .sep { margin: 0 8px; opacity: .5; }
+
+    /* skeleton */
+    .skeleton {
+      height: 130px;
+      border-radius: var(--radius);
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 37%, #e2e8f0 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: 0 0; }
+    }
+
+    .empty {
+      text-align: center; padding: 40px 12px; color: var(--text-muted);
+    }
+    .empty .big { font-size: 40px; margin-bottom: 8px; }
+
+    /* hidden util */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- =========================================================
+         Header
+         ========================================================= -->
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="brand-dot"></span>
+          <span>JUDGED VOTE</span>
+        </div>
+        <div class="topbar-meta" id="voteStatusPill">
+          <span class="pill open" id="pillOpen">Voting Open</span>
+          <span class="pill closed hidden" id="pillClosed">Voting Closed</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- =========================================================
+           Login screen
+           ========================================================= -->
+      <section id="authView">
+        <div class="auth-wrap">
+          <form class="auth-card" id="loginForm" autocomplete="on">
+            <h1>Judging System</h1>
+            <p class="sub">Enter your Judge ID and the shared password to begin.</p>
+
+            <div class="field">
+              <label for="judgeId">Judge ID</label>
+              <input type="text" id="judgeId" name="judgeId" placeholder="Your Judge ID" autocomplete="username" autocapitalize="characters" required />
+            </div>
+
+            <div class="field">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" placeholder="Shared password" autocomplete="current-password" required />
+            </div>
+
+            <button type="submit" class="btn block" id="loginBtn">
+              <span id="loginBtnLabel">Enter Judging System</span>
+            </button>
+
+            <div class="alert error" id="loginAlert" role="alert">
+              <span class="ic">⚠</span>
+              <span id="loginAlertText"></span>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           Judge dashboard
+           ========================================================= -->
+      <section id="dashView" class="hidden">
+        <div class="dash-head">
+          <div class="dash-title">
+            <h2>Your Judging <span class="judge-name" id="judgeNameLabel"></span></h2>
+            <div class="dash-actions">
+              <button class="btn subtle" id="refreshBtn" type="button">↻ Refresh</button>
+              <button class="btn ghost" id="logoutBtn" type="button">Log out</button>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-meta">
+              <span>Progress</span>
+              <span id="progressLabel">0 / 0 contestants scored</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="left">
+            <button class="btn subtle" id="saveAllBtn" type="button">Save all pending</button>
+          </div>
+          <div class="right" id="rangeLabel">Score range: 1 – 100</div>
+        </div>
+
+        <div class="grid" id="contestantGrid">
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+        </div>
+
+        <div class="empty hidden" id="emptyState">
+          <div class="big">🎤</div>
+          <div>No active contestants yet. The organizer can add them in the Google Sheet.</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- =========================================================
+         Footer
+         ========================================================= -->
+    <footer class="site">
+      <span>JUDGED VOTE</span>
+      <span class="sep">·</span>
+      <span>Google Sheets is the source of truth</span>
+      <span class="sep">·</span>
+      <span>Static frontend — host anywhere</span>
+    </footer>
+  </div>
+
+  <!-- =========================================================
+       App configuration
+       ========================================================= -->
+  <script>
+    // ============================================================
+    // CONFIG — paste your deployed Apps Script /exec URL here.
+    // Replace this placeholder string after deploying Code.gs.
+    // ============================================================
+    const API_URL = 'PASTE_YOUR_APPS_SCRIPT_EXEC_URL_HERE';
+
+    // Local UI constants — these are just hints; the backend is the real
+    // enforcer. We also fetch the live status from the API on load.
+    const DEFAULT_MIN_SCORE = 1;
+    const DEFAULT_MAX_SCORE = 100;
+
+    const SS_KEY = 'jv_creds'; // sessionStorage key for this browser session
+    const RETRYABLE_HINTS = [
+      'Server busy', 'Server error', 'Failed to fetch',
+      'NetworkError', 'Network request failed', 'Load failed',
+      'Unable to connect', 'timeout', 'temporarily'
+    ];
+
+    // ============================================================
+    // State
+    // ============================================================
+    let state = {
+      judgeId: null,
+      password: null,
+      judgeName: null,
+      contestants: [],     // [{id, name}]
+      votes: {},           // { contestantId: score } from server
+      uiScores: {},        // { contestantId: currentInputValue }
+      statuses: {},        // { contestantId: 'notscored'|'saved'|'saving'|'updating'|'error' }
+      votingOpen: true,
+      minScore: DEFAULT_MIN_SCORE,
+      maxScore: DEFAULT_MAX_SCORE
+    };
+
+    // ============================================================
+    // Utilities
+    // ============================================================
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+    function setHtml(el, html) { if (el) el.innerHTML = html; }
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    function isRetryable(errText) {
+      const t = String(errText || '').toLowerCase();
+      return RETRYABLE_HINTS.some(h => t.indexOf(h.toLowerCase()) !== -1);
+    }
+
+    // ============================================================
+    // API layer
+    // ============================================================
+    async function apiGet(params) {
+      const url = new URL(API_URL);
+      Object.keys(params).forEach(k => {
+        if (params[k] !== undefined && params[k] !== null) url.searchParams.set(k, params[k]);
+      });
+      const res = await fetch(url.toString(), { method: 'GET' });
+      const txt = await res.text();
+      let json;
+      try { json = JSON.parse(txt); }
+      catch (e) { throw new Error('Invalid response from server.'); }
+      return json;
+    }
+
+    async function apiPost(body) {
+      // text/plain avoids CORS preflight with Apps Script
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(body)
+      });
+      const txt = await res.text();
+      let json;
+      try { json = JSON.parse(txt); }
+      catch (e) { throw new Error('Invalid response from server.'); }
+      return json;
+    }
+
+    /**
+     * Save a vote. Retries ONCE for transient errors only.
+     * Never retries on definitive errors (bad password, invalid IDs,
+     * invalid score, voting closed).
+     */
+    async function saveVoteWithRetry(judgeId, contestantId, score, password) {
+      let lastErr = null;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const r = await apiPost({
+            action: 'saveVote',
+            judgeId: judgeId,
+            contestantId: contestantId,
+            score: score,
+            password: password
+          });
+          if (r && r.ok) return { ok: true, response: r };
+          // Definitive server error — do not retry
+          return { ok: false, error: (r && r.error) || 'Save failed.', retry: false };
+        } catch (e) {
+          lastErr = e;
+          if (attempt === 2 || !isRetryable(e.message)) {
+            return { ok: false, error: e.message || 'Network error.', retry: true };
+          }
+          // wait briefly then retry once
+          await new Promise(r => setTimeout(r, 700));
+        }
+      }
+      return { ok: false, error: (lastErr && lastErr.message) || 'Save failed.', retry: true };
+    }
+
+    // ============================================================
+    // Auth & session
+    // ============================================================
+    function saveCreds(judgeId, password) {
+      try {
+        sessionStorage.setItem(SS_KEY, JSON.stringify({ judgeId, password }));
+      } catch (e) { /* sessionStorage may be disabled; ignore */ }
+    }
+    function loadCreds() {
+      try {
+        const raw = sessionStorage.getItem(SS_KEY);
+        if (!raw) return null;
+        const o = JSON.parse(raw);
+        if (!o || !o.judgeId || !o.password) return null;
+        return o;
+      } catch (e) { return null; }
+    }
+    function clearCreds() {
+      try { sessionStorage.removeItem(SS_KEY); } catch (e) {}
+    }
+
+    // ============================================================
+    // Login flow
+    // ============================================================
+    function showLoginError(msg) {
+      const a = $('#loginAlert');
+      $('#loginAlertText').textContent = msg;
+      a.classList.add('show');
+    }
+    function clearLoginError() {
+      $('#loginAlert').classList.remove('show');
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      clearLoginError();
+      const judgeId = $('#judgeId').value.trim();
+      const password = $('#password').value;
+      const btn = $('#loginBtn');
+      btn.disabled = true;
+      $('#loginBtnLabel').innerHTML = '<span class="spin"></span> Signing in…';
+      try {
+        const r = await apiGet({ action: 'myVotes', judgeId: judgeId, password: password });
+        if (r && r.ok) {
+          state.judgeId = judgeId;
+          state.password = password;
+          state.judgeName = r.judgeName || '';
+          state.votes = r.votes || {};
+          saveCreds(judgeId, password);
+          await enterDashboard();
+        } else {
+          showLoginError((r && r.error) || 'Login failed.');
+        }
+      } catch (err) {
+        showLoginError(err.message || 'Network error during login.');
+      } finally {
+        btn.disabled = false;
+        $('#loginBtnLabel').textContent = 'Enter Judging System';
+      }
+    }
+
+    async function enterDashboard() {
+      $('#authView').classList.add('hidden');
+      $('#dashView').classList.remove('hidden');
+      $('#judgeNameLabel').textContent = state.judgeName ? '· ' + state.judgeName : '';
+      // Load status + contestants in parallel
+      await loadStatusAndContestants();
+      renderContestants();
+      updateProgress();
+    }
+
+    async function loadStatusAndContestants() {
+      try {
+        const [status, contestRes] = await Promise.all([
+          apiGet({ action: 'status' }).catch(() => null),
+          apiGet({ action: 'contestants' }).catch(() => null)
+        ]);
+        if (status && status.ok) {
+          state.votingOpen = !!status.votingOpen;
+          state.minScore = status.minScore || DEFAULT_MIN_SCORE;
+          state.maxScore = status.maxScore || DEFAULT_MAX_SCORE;
+        }
+        if (contestRes && contestRes.ok) {
+          state.contestants = contestRes.contestants || [];
+        } else {
+          state.contestants = [];
+        }
+      } catch (e) {
+        state.contestants = [];
+      }
+      // Update UI flags
+      $('#pillOpen').classList.toggle('hidden', !state.votingOpen);
+      $('#pillClosed').classList.toggle('hidden', state.votingOpen);
+      $('#rangeLabel').textContent = 'Score range: ' + state.minScore + ' – ' + state.maxScore;
+      $('#saveAllBtn').disabled = !state.votingOpen;
+    }
+
+    // ============================================================
+    // Rendering
+    // ============================================================
+    function statusBadge(s) {
+      switch (s) {
+        case 'saved':    return { cls: 'saved',    label: '✓ Saved' };
+        case 'saving':  return { cls: 'saving',   label: '<span class="spin"></span> Saving…' };
+        case 'updating':return { cls: 'updating', label: '<span class="spin"></span> Updating…' };
+        case 'error':   return { cls: 'error',    label: 'Error' };
+        default:        return { cls: 'notscored',label: 'Not scored' };
+      }
+    }
+
+    function renderContestants() {
+      const grid = $('#contestantGrid');
+      const empty = $('#emptyState');
+      if (!state.contestants.length) {
+        grid.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      // Sort: unscored first, then by contestant id
+      const list = state.contestants.slice().sort((a, b) => {
+        const aScored = state.votes[a.id] !== undefined && state.votes[a.id] !== null;
+        const bScored = state.votes[b.id] !== undefined && state.votes[b.id] !== null;
+        if (aScored !== bScored) return aScored ? 1 : -1;
+        return a.id.localeCompare(b.id);
+      });
+
+      grid.innerHTML = list.map(c => {
+        const savedScore = state.votes[c.id];
+        const hasSaved = savedScore !== undefined && savedScore !== null;
+        const st = hasSaved ? 'saved' : 'notscored';
+        state.statuses[c.id] = st;
+        if (!state.uiScores[c.id]) state.uiScores[c.id] = hasSaved ? String(savedScore) : '';
+        const badge = statusBadge(st);
+        const inputVal = state.uiScores[c.id] || '';
+        const btnLabel = hasSaved ? 'Update Score' : 'Save Score';
+        const btnDisabled = !state.votingOpen ? 'disabled' : '';
+        const cardCls = hasSaved ? 'card saved' : 'card';
+        return `
+          <div class="${cardCls}" data-cid="${escapeHtml(c.id)}">
+            <div class="card-head">
+              <div>
+                <div class="contestant-name">${escapeHtml(c.name)}</div>
+                <div class="contestant-id">${escapeHtml(c.id)}</div>
+              </div>
+              <span class="badge ${badge.cls}" data-badge>${badge.label}</span>
+            </div>
+            <div class="score-row">
+              <input type="number" inputmode="numeric" min="${state.minScore}" max="${state.maxScore}"
+                     value="${escapeHtml(inputVal)}" data-score
+                     aria-label="Score for ${escapeHtml(c.name)}" ${btnDisabled} />
+              <div class="stepper" aria-hidden="true">
+                <button type="button" data-step="1" ${btnDisabled}>▲</button>
+                <button type="button" data-step="-1" ${btnDisabled}>▼</button>
+              </div>
+              <button class="btn" data-save ${btnDisabled}>${btnLabel}</button>
+            </div>
+            <div class="hint">Range ${state.minScore}–${state.maxScore}. Scores save individually.</div>
+            <div class="card-msg" data-msg></div>
+          </div>`;
+      }).join('');
+
+      bindCardEvents();
+    }
+
+    function bindCardEvents() {
+      $$('#contestantGrid .card').forEach(card => {
+        const cid = card.getAttribute('data-cid');
+        const input = card.querySelector('[data-score]');
+        const saveBtn = card.querySelector('[data-save]');
+        const stepUp = card.querySelector('[data-step="1"]');
+        const stepDn = card.querySelector('[data-step="-1"]');
+
+        input.addEventListener('input', () => {
+          state.uiScores[cid] = input.value;
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+        });
+        saveBtn.addEventListener('click', () => onSaveClick(cid));
+        if (stepUp) stepUp.addEventListener('click', () => stepInput(input, 1));
+        if (stepDn) stepDn.addEventListener('click', () => stepInput(input, -1));
+      });
+    }
+
+    function stepInput(input, delta) {
+      let v = Number(input.value);
+      if (!isFinite(v)) v = state.minScore;
+      v = v + delta;
+      if (v < state.minScore) v = state.minScore;
+      if (v > state.maxScore) v = state.maxScore;
+      input.value = v;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function setCardStatus(cid, st, msg, msgType) {
+      state.statuses[cid] = st;
+      const card = document.querySelector('.card[data-cid="' + cssEscape(cid) + '"]');
+      if (!card) return;
+      const badge = card.querySelector('[data-badge]');
+      const b = statusBadge(st);
+      badge.className = 'badge ' + b.cls;
+      badge.innerHTML = b.label;
+      card.classList.toggle('saved', st === 'saved');
+      card.classList.toggle('error', st === 'error');
+      const msgEl = card.querySelector('[data-msg]');
+      if (msg) {
+        msgEl.className = 'card-msg show ' + (msgType || 'info');
+        msgEl.innerHTML = '<span class="ic">●</span><span>' + escapeHtml(msg) + '</span>';
+      } else {
+        msgEl.className = 'card-msg';
+        msgEl.innerHTML = '';
+      }
+    }
+
+    // minimal CSS escape for attribute selectors
+    function cssEscape(s) {
+      return String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+    }
+
+    // ============================================================
+    // Save handlers
+    // ============================================================
+    async function onSaveClick(cid) {
+      if (!state.votingOpen) {
+        setCardStatus(cid, 'error', 'Voting is closed.', 'error');
+        return;
+      }
+      const card = document.querySelector('.card[data-cid="' + cssEscape(cid) + '"]');
+      const input = card.querySelector('[data-score]');
+      const raw = (input.value || '').trim();
+      if (raw === '') {
+        setCardStatus(cid, 'error', 'Enter a score first.', 'error');
+        return;
+      }
+      const score = Number(raw);
+      if (!isFinite(score)) {
+        setCardStatus(cid, 'error', 'Score must be a number.', 'error');
+        return;
+      }
+      if (score < state.minScore || score > state.maxScore) {
+        setCardStatus(cid, 'error', 'Score must be between ' + state.minScore + ' and ' + state.maxScore + '.', 'error');
+        return;
+      }
+      const hadExisting = state.votes[cid] !== undefined && state.votes[cid] !== null;
+      setCardStatus(cid, hadExisting ? 'updating' : 'saving', '', null);
+      // disable save button while in-flight
+      const saveBtn = card.querySelector('[data-save]');
+      const original = saveBtn.textContent;
+      saveBtn.disabled = true;
+
+      const res = await saveVoteWithRetry(state.judgeId, cid, score, state.password);
+      saveBtn.disabled = false;
+
+      if (res.ok) {
+        const r = res.response;
+        state.votes[cid] = r.score !== undefined ? r.score : score;
+        state.uiScores[cid] = String(state.votes[cid]);
+        input.value = state.uiScores[cid];
+        setCardStatus(cid, 'saved', r.action === 'updated' ? 'Score updated.' : 'Score saved.', 'success');
+        saveBtn.textContent = 'Update Score';
+        updateProgress();
+      } else {
+        setCardStatus(cid, 'error', res.error || 'Save failed.', 'error');
+        // keep button label consistent with server state
+        saveBtn.textContent = (state.votes[cid] !== undefined && state.votes[cid] !== null) ? 'Update Score' : 'Save Score';
+      }
+    }
+
+    async function saveAllPending() {
+      if (!state.votingOpen) return;
+      const pending = state.contestants.filter(c => {
+        const has = state.votes[c.id] !== undefined && state.votes[c.id] !== null;
+        const ui = state.uiScores[c.id];
+        return ui && ui !== '' && (!has || Number(ui) !== Number(state.votes[c.id]));
+      });
+      if (!pending.length) {
+        flashToolbar('No pending changes.');
+        return;
+      }
+      $('#saveAllBtn').disabled = true;
+      const original = $('#saveAllBtn').textContent;
+      $('#saveAllBtn').innerHTML = '<span class="spin"></span> Saving…';
+      for (const c of pending) {
+        await onSaveClick(c.id);
+      }
+      $('#saveAllBtn').disabled = !state.votingOpen;
+      $('#saveAllBtn').textContent = original;
+    }
+
+    function flashToolbar(msg) {
+      const r = $('.toolbar .right');
+      if (!r) return;
+      const prev = r.textContent;
+      r.textContent = msg;
+      setTimeout(() => { r.textContent = prev; }, 1600);
+    }
+
+    // ============================================================
+    // Progress
+    // ============================================================
+    function updateProgress() {
+      const total = state.contestants.length;
+      let scored = 0;
+      state.contestants.forEach(c => {
+        if (state.votes[c.id] !== undefined && state.votes[c.id] !== null) scored++;
+      });
+      $('#progressLabel').textContent = scored + ' / ' + total + ' contestants scored';
+      const pct = total > 0 ? Math.round((scored / total) * 100) : 0;
+      $('#progressFill').style.width = pct + '%';
+    }
+
+    // ============================================================
+    // Refresh / reconnect
+    // ============================================================
+    async function handleRefresh() {
+      const btn = $('#refreshBtn');
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spin"></span> Reloading…';
+      try {
+        const r = await apiGet({ action: 'myVotes', judgeId: state.judgeId, password: state.password });
+        if (r && r.ok) {
+          state.judgeName = r.judgeName || state.judgeName;
+          state.votes = r.votes || {};
+          $('#judgeNameLabel').textContent = state.judgeName ? '· ' + state.judgeName : '';
+          // clear stale UI scores so they reflect server truth
+          state.uiScores = {};
+          await loadStatusAndContestants();
+          renderContestants();
+          updateProgress();
+          flashToolbar('Refreshed from Google Sheets.');
+        } else {
+          flashToolbar((r && r.error) || 'Refresh failed.');
+        }
+      } catch (e) {
+        flashToolbar(e.message || 'Network error.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    }
+
+    // ============================================================
+    // Logout
+    // ============================================================
+    function handleLogout() {
+      clearCreds();
+      state.judgeId = null;
+      state.password = null;
+      state.judgeName = null;
+      state.votes = {};
+      state.uiScores = {};
+      state.statuses = {};
+      $('#dashView').classList.add('hidden');
+      $('#authView').classList.remove('hidden');
+      $('#loginForm').reset();
+    }
+
+    // ============================================================
+    // Boot
+    // ============================================================
+    function bindStaticEvents() {
+      $('#loginForm').addEventListener('submit', handleLogin);
+      $('#logoutBtn').addEventListener('click', handleLogout);
+      $('#refreshBtn').addEventListener('click', handleRefresh);
+      $('#saveAllBtn').addEventListener('click', saveAllPending);
+    }
+
+    async function tryRestoreSession() {
+      const creds = loadCreds();
+      if (!creds) return;
+      $('#judgeId').value = creds.judgeId;
+      // attempt silent login
+      try {
+        const r = await apiGet({ action: 'myVotes', judgeId: creds.judgeId, password: creds.password });
+        if (r && r.ok) {
+          state.judgeId = creds.judgeId;
+          state.password = creds.password;
+          state.judgeName = r.judgeName || '';
+          state.votes = r.votes || {};
+          await enterDashboard();
+        }
+      } catch (e) { /* stay on login */ }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      bindStaticEvents();
+      // try restore session silently
+      tryRestoreSession();
+    });
+  </script>
+</body>
+</html>
