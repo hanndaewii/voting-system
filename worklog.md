@@ -263,3 +263,60 @@ Stage Summary:
 
 Recommended next phase:
 - Optional: organizer dashboard route (read-only aggregate view when SHOW_LIVE_RESULTS=true), judge notes/comments per contestant (would need backend column addition), batch scoring via CSV upload, real-time multi-judge progress indicator (anonymized count of judges who've completed).
+
+---
+Task ID: 30 (webDevReview round 3)
+Agent: webDevReview
+Task: QA baseline + new features (organizer view, judges-progress, dist-chart, card collapse, theme auto-detect) + styling.
+
+Work Log:
+- Read worklog; project stable at 43/43 tests from round 2.
+- QA baseline: 43/43 tests passed, browser smoke clean.
+
+NEW BACKEND FEATURES (Code.gs, 595→665 lines):
+- New helper countJudgesCompleted_() — counts active judges who've scored every active contestant (anonymized; never exposes judge IDs).
+- New helper getActiveJudgeIds_() — internal-only list of active judge IDs (never exposed via public endpoint).
+- New helper getResultsBreakdown_() — returns per-contestant aggregate { contestantId, name, total, count, average, rank } sorted by total desc with ties sharing ordinal rank.
+- status endpoint now also returns judgesCompleted (anonymized counter).
+- results endpoint (when SHOW_LIVE_RESULTS=true) now also returns breakdown array + judgesCompleted + activeJudges. Existing results field (totals) unchanged for backward compat.
+- Added 3 new tests: STATUS-2 (judgesCompleted transitions 0→1→2 as judges complete), RESULTS-4 (breakdown has rank/count/avg, no judge IDs leaked), RESULTS-5 (sorted desc, ties share rank). Total: 46/46 PASS.
+
+NEW FRONTEND FEATURES (index.html, 2055→~2500 lines):
+- Tab bar (Judging / Results) above the dashboard — switches between judge and organizer views.
+- Organizer view (#orgView or #organizer URL hash): aggregate results table with rank, contestant name+ID, total, judge count, average. Medal icons (🥇🥈🥉) for top 3. Summary tiles: judges finished, total votes cast, contestants ranked, top average. Shows "🔒 Results are hidden until voting closes." when SHOW_LIVE_RESULTS=false. Respects URL hash on load and on hashchange.
+- Anonymous judges-progress indicator in dashboard header: "X of Y judges finished scoring" with a progress bar. Only shown when activeJudges > 1. Refreshes after each save.
+- Score distribution mini-chart: 5-quintile bar chart of the judge's own scores, with hover tooltips ("N scores") and quintile-boundary labels. Hidden when no scores yet.
+- Card collapse: scored cards get a chevron collapse button; collapsed cards show only name + score + badge, hiding the input/chips/hint. Collapse state stored per-session. Collapse controls are added dynamically when a card transitions from unscored to saved (via new ensureCollapseControls helper).
+- Theme auto-detect: on first visit (no localStorage), respects prefers-color-scheme: dark.
+- Keyboard shortcuts: j switches to Judging tab, o switches to Results tab. Overlay updated to list these.
+
+STYLING IMPROVEMENTS:
+- Judges-progress indicator with icon + num + gradient bar.
+- Dist-chart with gradient bars, hover tooltips, empty-bar styling, quintile labels.
+- Card collapse: chevron rotation animation, collapsed card layout (compact), collapse-summary score display.
+- Organizer view: org-card with gradient accents, summary tiles, sticky table header, hover row highlight, zebra striping, rank column with medals, numeric tabular-nums alignment.
+- Tab bar with active state gradient, hover states.
+- focus-visible outlines on collapse buttons and tab buttons.
+
+BROWSER E2E VERIFICATION (all passed):
+- Score all 4 contestants → judges-progress shows "1/2", progress bar COMPLETE, celebration SHOWN then auto-hidden.
+- Dist-chart bars correct for scores 85,92,70,100 (buckets computed correctly).
+- Card collapse button PRESENT after insert (fix verified); collapse toggles score-row display none/block, summary display block/none.
+- Round-trip: reload → all 4 scores persisted (85,92,70,100); server confirms with timestamps.
+- Organizer view with SHOW_LIVE=true: summary tiles "1/2 judges finished | 6 votes cast | 4 ranked | 95 top avg"; table ranked C005(190,2,95)→C001(180,2,90)→C004(80,1,80)→C002(70,1,70) with medals; NO judge IDs leaked ("clean").
+- Organizer view with SHOW_LIVE=false (default): shows "🔒 Results are hidden until voting closes."
+- Theme auto-detect: prefers-dark → dark theme; prefers-light → light theme.
+- Tab switching: Judging ↔ Results works via clicks, keyboard (j/o), and URL hash.
+- No JS console errors throughout.
+
+BUGS FOUND AND FIXED:
+1. judges-progress showed stale count after save — FIXED by calling loadStatusAndContestants() after each successful save to re-fetch the anonymized judgesCompleted counter.
+2. Card collapse button missing when a card transitioned from unscored to saved (only present at initial render) — FIXED by adding ensureCollapseControls() helper that dynamically injects the collapse button + collapse-summary span into the card's header after an insert save. Idempotent.
+
+Stage Summary:
+- 46/46 tests pass (43 from round 2 + 3 new).
+- All round-3 features verified in-browser with no regressions.
+- Both bugs fixed and verified.
+
+Recommended next phase:
+- Optional: per-contestant comparison mode (show judge's score next to group average when SHOW_LIVE_RESULTS=true), CSV batch upload for organizers, real-time poll (auto-refresh status every N seconds), judge notes/comments (would need backend column addition — breaks spec's 4-column Votes sheet, so skip), export results to CSV/PDF for organizers.

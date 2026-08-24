@@ -834,10 +834,212 @@
     .btn:focus-visible, .icon-btn:focus-visible, .chip:focus-visible,
     .toggle-chip:focus-visible, .stepper button:focus-visible,
     .dropdown-menu button:focus-visible, .overlay-close:focus-visible,
-    .toast .action-btn:focus-visible {
+    .toast .action-btn:focus-visible, .collapse-btn:focus-visible,
+    .tabbar button:focus-visible {
       outline: 2px solid var(--primary);
       outline-offset: 2px;
     }
+
+    /* =========================================================
+       Judges-finished indicator (anonymized)
+       ========================================================= */
+    .judges-progress {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: var(--card-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .judges-progress .ic { font-size: 14px; }
+    .judges-progress .num { color: var(--primary-strong); font-weight: 800; }
+    [data-theme="dark"] .judges-progress .num { color: var(--primary); }
+    .judges-progress .bar {
+      flex: 1 1 auto;
+      height: 6px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-left: 4px;
+    }
+    .judges-progress .bar > div {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+      border-radius: 999px;
+      transition: width .4s ease;
+    }
+
+    /* =========================================================
+       Score distribution mini-chart
+       ========================================================= */
+    .dist-chart {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--card-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .dist-chart .label {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted); font-weight: 700; margin-bottom: 8px;
+    }
+    .dist-bars {
+      display: flex; align-items: flex-end; gap: 4px; height: 44px;
+    }
+    .dist-bar {
+      flex: 1 1 0;
+      min-width: 8px;
+      background: linear-gradient(180deg, var(--primary), #14b8a6);
+      border-radius: 3px 3px 0 0;
+      min-height: 3px;
+      transition: height .3s ease;
+      position: relative;
+    }
+    .dist-bar.empty { background: var(--border); }
+    .dist-bar .tip {
+      position: absolute;
+      bottom: 100%;
+      left: 50%; transform: translateX(-50%);
+      background: var(--bg);
+      color: var(--text-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px; font-weight: 700;
+      white-space: nowrap;
+      opacity: 0; pointer-events: none;
+      transition: opacity .15s;
+      margin-bottom: 4px;
+    }
+    .dist-bar:hover .tip { opacity: 1; }
+    .dist-labels {
+      display: flex; justify-content: space-between;
+      font-size: 9px; color: var(--text-muted);
+      margin-top: 4px; font-weight: 600;
+    }
+
+    /* =========================================================
+       Card collapse
+       ========================================================= */
+    .collapse-btn {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      background: var(--card-soft);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: all .12s;
+      flex: 0 0 auto;
+    }
+    .collapse-btn:hover { background: var(--primary-soft); color: var(--primary-strong); border-color: var(--primary); }
+    [data-theme="dark"] .collapse-btn:hover { color: var(--primary); }
+    .collapse-btn svg { width: 14px; height: 14px; transition: transform .2s; }
+    .card.collapsed .collapse-btn svg { transform: rotate(-90deg); }
+    .card.collapsed .score-row,
+    .card.collapsed .chips,
+    .card.collapsed .hint,
+    .card.collapsed .card-msg { display: none; }
+    .card.collapsed { padding: 12px 16px; }
+    .card.collapsed .card-head { margin: 0; }
+    .card .collapse-summary {
+      display: none;
+      font-size: 18px; font-weight: 800;
+      color: var(--primary-strong);
+      font-variant-numeric: tabular-nums;
+    }
+    [data-theme="dark"] .card .collapse-summary { color: var(--primary); }
+    .card.collapsed .collapse-summary { display: block; }
+
+    /* =========================================================
+       Organizer view (URL hash #organizer)
+       ========================================================= */
+    .org-view { padding: 16px 0; }
+    .org-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+    .org-card h2 { margin: 0 0 4px; font-size: 20px; font-weight: 800; }
+    .org-card .sub { color: var(--text-muted); font-size: 12px; margin-bottom: 18px; }
+    .org-summary {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .org-summary .tile {
+      flex: 1 1 120px;
+      background: var(--card-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+    }
+    .org-summary .tile .v { font-size: 22px; font-weight: 800; color: var(--primary-strong); }
+    [data-theme="dark"] .org-summary .tile .v { color: var(--primary); }
+    .org-summary .tile .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700; }
+    .org-table-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    table.org-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 480px;
+    }
+    table.org-table th, table.org-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    table.org-table th {
+      background: var(--card-soft);
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted); font-weight: 700;
+      position: sticky; top: 0;
+    }
+    table.org-table tr:hover td { background: var(--card-soft); }
+    table.org-table td.rank {
+      font-weight: 800; color: var(--primary-strong); font-variant-numeric: tabular-nums;
+      width: 56px;
+    }
+    [data-theme="dark"] table.org-table td.rank { color: var(--primary); }
+    table.org-table td.rank .medal { font-size: 16px; margin-right: 4px; }
+    table.org-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+    table.org-table tr:nth-child(even) td { background: rgba(0,0,0,0.015); }
+    [data-theme="dark"] table.org-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .org-empty {
+      text-align: center; padding: 40px 12px; color: var(--text-muted);
+    }
+    .org-empty .big { font-size: 40px; margin-bottom: 8px; }
+
+    /* =========================================================
+       Tab bar to switch between Judge and Organizer views
+       ========================================================= */
+    .tabbar {
+      display: flex; gap: 4px;
+      background: var(--card);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+      margin: 0 auto 16px;
+      max-width: var(--maxw);
+    }
+    .tabbar button {
+      flex: 1 1 0;
+      height: 40px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: var(--radius-xs);
+      font-size: 13px; font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .tabbar button.active {
+      background: var(--primary);
+      color: var(--primary-fg);
+    }
+    .tabbar button:hover:not(.active) { background: var(--card-soft); color: var(--text); }
 
     /* =========================================================
        Print stylesheet — clean export view
@@ -899,6 +1101,20 @@
 
     <main>
       <!-- =========================================================
+           View tab bar (Judge / Organizer)
+           ========================================================= -->
+      <div class="tabbar" id="tabbar" style="display:none;">
+        <button type="button" id="tabJudge" class="active">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Judging
+        </button>
+        <button type="button" id="tabOrganizer">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+          Results
+        </button>
+      </div>
+
+      <!-- =========================================================
            Login screen
            ========================================================= -->
       <section id="authView">
@@ -953,6 +1169,16 @@
             <div class="stat-tile hi"><div class="v" id="statHi">—</div><div class="l">Highest</div></div>
             <div class="stat-tile lo"><div class="v" id="statLo">—</div><div class="l">Lowest</div></div>
             <div class="stat-tile rem"><div class="v" id="statRem">—</div><div class="l">Remaining</div></div>
+          </div>
+          <div class="judges-progress" id="judgesProgress" style="display:none;">
+            <span class="ic">👥</span>
+            <span><span class="num" id="judgesCompletedNum">0</span> of <span id="judgesTotalNum">0</span> judges finished scoring</span>
+            <div class="bar"><div id="judgesProgressBar" style="width:0%"></div></div>
+          </div>
+          <div class="dist-chart" id="distChart" style="display:none;">
+            <div class="label">Your score distribution</div>
+            <div class="dist-bars" id="distBars"></div>
+            <div class="dist-labels" id="distLabels"></div>
           </div>
         </div>
 
@@ -1017,6 +1243,24 @@
           <div>No active contestants yet. The organizer can add them in the Google Sheet.</div>
         </div>
       </section>
+
+      <!-- =========================================================
+           Organizer view — aggregate results (read-only)
+           Only populates when SHOW_LIVE_RESULTS=true on the backend.
+           ========================================================= -->
+      <section id="orgView" class="org-view hidden">
+        <div class="org-card">
+          <h2>Aggregate results</h2>
+          <div class="sub">Read-only. Per-judge scores are never exposed — only contestant totals, averages, and ranks.</div>
+          <div class="org-summary" id="orgSummary"></div>
+          <div id="orgBody">
+            <div class="org-empty">
+              <div class="big">🔒</div>
+              <div id="orgEmptyText">Results are hidden until voting closes.</div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- =========================================================
@@ -1065,6 +1309,8 @@
         <div class="shortcut-row"><span class="desc">Save focused card</span><span class="keys"><span class="kbd">S</span></span></div>
         <div class="shortcut-row"><span class="desc">Toggle dark mode</span><span class="keys"><span class="kbd">T</span></span></div>
         <div class="shortcut-row"><span class="desc">Toggle unscored-only filter</span><span class="keys"><span class="kbd">U</span></span></div>
+        <div class="shortcut-row"><span class="desc">Switch to Judging tab</span><span class="keys"><span class="kbd">J</span></span></div>
+        <div class="shortcut-row"><span class="desc">Switch to Results tab</span><span class="keys"><span class="kbd">O</span></span></div>
         <div class="shortcut-row"><span class="desc">Refresh from Google Sheets</span><span class="keys"><span class="kbd">R</span></span></div>
         <div class="shortcut-row"><span class="desc">Clear search / filters</span><span class="keys"><span class="kbd">Esc</span></span></div>
         <div class="shortcut-row"><span class="desc">Show this help</span><span class="keys"><span class="kbd">?</span></span></div>
@@ -1117,7 +1363,11 @@
       celebrated: false,
       undoStack: [],           // [{ cid, prevScore, newScore }] most-recent-first
       autoSave: false,         // opt-in auto-save toggle
-      autoSaveTimers: {}       // { cid: timeoutId } for debounce
+      autoSaveTimers: {},      // { cid: timeoutId } for debounce
+      collapsedCards: {},      // { contestantId: true } for collapse state
+      judgesCompleted: 0,      // anonymized count from status endpoint
+      showLiveResults: false,  // mirrors backend SHOW_LIVE_RESULTS
+      orgLoaded: false         // whether organizer view data has been fetched
     };
 
     // ============================================================
@@ -1218,8 +1468,14 @@
       if (meta) meta.setAttribute('content', theme === 'dark' ? '#020617' : '#0f172a');
     }
     function loadTheme() {
-      let t = 'light';
-      try { t = localStorage.getItem(THEME_KEY) || 'light'; } catch (e) {}
+      let t = null;
+      try { t = localStorage.getItem(THEME_KEY); } catch (e) {}
+      // First visit (no saved preference) — respect the OS preference.
+      if (!t) {
+        const prefersDark = window.matchMedia
+          && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        t = prefersDark ? 'dark' : 'light';
+      }
       if (t !== 'dark') t = 'light';
       applyTheme(t);
     }
@@ -1385,7 +1641,17 @@
 
     async function enterDashboard() {
       $('#authView').classList.add('hidden');
-      $('#dashView').classList.remove('hidden');
+      $('#tabbar').style.display = '';
+      // Respect URL hash: #organizer shows the results view
+      const startOnOrg = location.hash === '#organizer';
+      if (startOnOrg) {
+        // Need dashView to be hidden initially; switchTab will reveal orgView
+        $('#dashView').classList.add('hidden');
+        switchTab('organizer', false);
+      } else {
+        $('#dashView').classList.remove('hidden');
+        switchTab('judge', false);
+      }
       $('#judgeNameLabel').textContent = state.judgeName ? '· ' + state.judgeName : '';
       await loadStatusAndContestants();
       renderContestants();
@@ -1405,6 +1671,8 @@
           state.maxScore = status.maxScore || DEFAULT_MAX_SCORE;
           state.activeJudges = status.activeJudges || 0;
           state.activeContestants = status.activeContestants || 0;
+          state.judgesCompleted = status.judgesCompleted || 0;
+          state.showLiveResults = !!status.showLiveResults;
         }
         if (contestRes && contestRes.ok) {
           state.contestants = contestRes.contestants || [];
@@ -1418,6 +1686,7 @@
       $('#pillClosed').classList.toggle('hidden', state.votingOpen);
       $('#rangeLabel').textContent = 'Range ' + state.minScore + '–' + state.maxScore;
       $('#saveAllBtn').disabled = !state.votingOpen;
+      renderJudgesProgress();
     }
 
     // ============================================================
@@ -1512,11 +1781,15 @@
         const inputVal = state.uiScores[c.id] || '';
         const btnLabel = hasSaved ? 'Update Score' : 'Save Score';
         const disabled = !state.votingOpen ? 'disabled' : '';
-        const cardCls = hasSaved ? 'card saved' : 'card';
+        const collapsed = hasSaved && state.collapsedCards[c.id] ? ' collapsed' : '';
+        const cardCls = (hasSaved ? 'card saved' : 'card') + collapsed;
         const hc = heatClass(inputVal);
         const chipsHtml = presets.map(p =>
           '<button class="chip" type="button" data-preset="' + p + '" ' + disabled + '>' + p + '</button>'
         ).join('');
+        const collapseBtn = hasSaved
+          ? '<button class="collapse-btn" type="button" data-collapse aria-label="Collapse card" title="Collapse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>'
+          : '';
         return `
           <div class="${cardCls}" data-cid="${escapeHtml(c.id)}" style="animation-delay:${Math.min(idx * 30, 300)}ms">
             <div class="card-head">
@@ -1525,7 +1798,11 @@
                 <div class="contestant-id">${escapeHtml(c.id)}</div>
                 ${hasSaved && state.timestamps[c.id] ? '<div class="card-timestamp" data-ts>Updated ' + escapeHtml(relativeTime(state.timestamps[c.id])) + '</div>' : ''}
               </div>
-              <span class="badge ${badge.cls}" data-badge>${badge.label}</span>
+              <div style="display:flex; align-items:flex-start; gap:6px;">
+                ${hasSaved ? '<span class="collapse-summary">' + escapeHtml(String(savedScore)) + '</span>' : ''}
+                <span class="badge ${badge.cls}" data-badge>${badge.label}</span>
+                ${collapseBtn}
+              </div>
             </div>
             <div class="score-row">
               <input type="number" inputmode="numeric" min="${state.minScore}" max="${state.maxScore}"
@@ -1568,6 +1845,15 @@
         saveBtn.addEventListener('click', () => onSaveClick(cid));
         if (stepUp) stepUp.addEventListener('click', () => stepInput(input, 1));
         if (stepDn) stepDn.addEventListener('click', () => stepInput(input, -1));
+        const collapseBtn = card.querySelector('[data-collapse]');
+        if (collapseBtn) {
+          collapseBtn.addEventListener('click', () => {
+            const has = state.votes[cid] !== undefined && state.votes[cid] !== null;
+            if (!has) return;
+            state.collapsedCards[cid] = !state.collapsedCards[cid];
+            card.classList.toggle('collapsed', state.collapsedCards[cid]);
+          });
+        }
         chips.forEach(chip => {
           chip.addEventListener('click', () => {
             if (chip.disabled) return;
@@ -1609,6 +1895,42 @@
       } else {
         msgEl.className = 'card-msg';
         msgEl.innerHTML = '';
+      }
+    }
+
+    /**
+     * Add the collapse button + collapse-summary to a card that transitioned
+     * from unscored to saved. Idempotent — does nothing if already present.
+     */
+    function ensureCollapseControls(card, cid) {
+      if (!card) return;
+      const headRight = card.querySelector('.card-head > div:last-child');
+      if (!headRight) return;
+      // collapse-summary (before badge)
+      if (!card.querySelector('.collapse-summary')) {
+        const sum = document.createElement('span');
+        sum.className = 'collapse-summary';
+        sum.textContent = String(state.votes[cid] || '');
+        headRight.insertBefore(sum, headRight.firstChild);
+      } else {
+        card.querySelector('.collapse-summary').textContent = String(state.votes[cid] || '');
+      }
+      // collapse button (after badge)
+      if (!card.querySelector('[data-collapse]')) {
+        const btn = document.createElement('button');
+        btn.className = 'collapse-btn';
+        btn.setAttribute('type', 'button');
+        btn.setAttribute('data-collapse', '');
+        btn.setAttribute('aria-label', 'Collapse card');
+        btn.setAttribute('title', 'Collapse');
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+        btn.addEventListener('click', () => {
+          const has = state.votes[cid] !== undefined && state.votes[cid] !== null;
+          if (!has) return;
+          state.collapsedCards[cid] = !state.collapsedCards[cid];
+          card.classList.toggle('collapsed', state.collapsedCards[cid]);
+        });
+        headRight.appendChild(btn);
       }
     }
 
@@ -1671,6 +1993,14 @@
             }
           }
         }
+        // If this was an insert (unscored → saved), the card needs a collapse
+        // button + collapse-summary which were not in the initial render.
+        if (isNew) ensureCollapseControls(card, cid);
+        else {
+          // Update the existing collapse-summary with the new score
+          const sum = card.querySelector('.collapse-summary');
+          if (sum) sum.textContent = String(state.votes[cid]);
+        }
         // Push undo entry (only meaningful for updates — inserting has no previous value to revert to)
         if (!isNew && prevScore !== null && prevScore !== state.votes[cid]) {
           state.undoStack.unshift({ cid, prevScore: prevScore, newScore: state.votes[cid] });
@@ -1682,6 +2012,8 @@
         toast((isNew ? 'Saved ' : 'Updated ') + cid + ' = ' + state.votes[cid], 'success', 4000, undoAction);
         updateProgress();
         refreshStats();
+        // Re-fetch status so judges-progress updates (anonymized count may have changed)
+        loadStatusAndContestants();
       } else {
         setCardStatus(cid, 'error', res.error || 'Save failed.', 'error');
         toast(res.error || 'Save failed for ' + cid, 'error');
@@ -1772,8 +2104,71 @@
           $('#statHi').textContent = r.highest === null ? '—' : r.highest;
           $('#statLo').textContent = r.lowest === null ? '—' : r.lowest;
           $('#statRem').textContent = r.remaining;
+          renderDistChart();
         }
       } catch (e) { /* silent — stats are non-critical */ }
+    }
+
+    /**
+     * Render the anonymized "X of Y judges finished" indicator.
+     * Only shown when there is more than one active judge.
+     */
+    function renderJudgesProgress() {
+      const el = $('#judgesProgress');
+      if (!el) return;
+      if (state.activeJudges <= 1) {
+        el.style.display = 'none';
+        return;
+      }
+      el.style.display = 'flex';
+      $('#judgesCompletedNum').textContent = state.judgesCompleted;
+      $('#judgesTotalNum').textContent = state.activeJudges;
+      const pct = state.activeJudges > 0
+        ? Math.round((state.judgesCompleted / state.activeJudges) * 100) : 0;
+      $('#judgesProgressBar').style.width = pct + '%';
+    }
+
+    /**
+     * Render the score-distribution mini-chart. Buckets the judge's own
+     * scores into 5 quintiles of the configured range and shows a bar
+     * for each bucket.
+     */
+    function renderDistChart() {
+      const el = $('#distChart');
+      if (!el) return;
+      const scored = Object.values(state.votes)
+        .map(v => Number(v))
+        .filter(v => isFinite(v));
+      if (scored.length === 0) {
+        el.style.display = 'none';
+        return;
+      }
+      el.style.display = 'block';
+      const lo = state.minScore, hi = state.maxScore;
+      const span = Math.max(1, hi - lo);
+      const buckets = [0, 0, 0, 0, 0];
+      scored.forEach(v => {
+        let idx = Math.floor(((v - lo) / span) * 5);
+        if (idx < 0) idx = 0;
+        if (idx > 4) idx = 4;
+        buckets[idx]++;
+      });
+      const max = Math.max(1, ...buckets);
+      const bars = $('#distBars');
+      const labels = $('#distLabels');
+      bars.innerHTML = buckets.map((n, i) => {
+        const h = Math.round((n / max) * 100);
+        const tip = n + ' score' + (n === 1 ? '' : 's');
+        return '<div class="dist-bar' + (n === 0 ? ' empty' : '') + '" style="height:' + Math.max(3, h) + '%"><div class="tip">' + tip + '</div></div>';
+      }).join('');
+      // quintile labels
+      const quintileLabels = [];
+      for (let i = 0; i < 5; i++) {
+        const a = Math.round(lo + (span * i / 5));
+        quintileLabels.push(a);
+      }
+      quintileLabels.push(hi);
+      labels.innerHTML = quintileLabels.map(l => '<span>' + l + '</span>').join('');
     }
 
     // ============================================================
@@ -1828,9 +2223,91 @@
       state.statuses = {};
       state.celebrated = false;
       state.undoStack = [];
+      state.collapsedCards = {};
+      state.orgLoaded = false;
+      // Reset to judge tab and clear URL hash
+      switchTab('judge', false);
       $('#dashView').classList.add('hidden');
+      $('#orgView').classList.add('hidden');
       $('#authView').classList.remove('hidden');
+      $('#tabbar').style.display = 'none';
       $('#loginForm').reset();
+    }
+
+    // ============================================================
+    // View switching (Judge / Organizer)
+    // ============================================================
+    function switchTab(name, push) {
+      const isJudge = name === 'judge';
+      $('#tabJudge').classList.toggle('active', isJudge);
+      $('#tabOrganizer').classList.toggle('active', !isJudge);
+      // Show/hide views (only if logged in; otherwise both hidden)
+      const loggedIn = !!state.judgeId;
+      $('#dashView').classList.toggle('hidden', !(loggedIn && isJudge));
+      $('#orgView').classList.toggle('hidden', !(loggedIn && !isJudge));
+      if (push) {
+        const newHash = isJudge ? '' : '#organizer';
+        if (location.hash !== newHash) {
+          history.replaceState(null, '', newHash ? newHash : location.pathname + location.search);
+        }
+      }
+      if (!isJudge && loggedIn && !state.orgLoaded) {
+        loadOrganizerView();
+      }
+    }
+    async function loadOrganizerView() {
+      const body = $('#orgBody');
+      const summary = $('#orgSummary');
+      body.innerHTML = '<div class="org-empty"><div class="big">⏳</div><div>Loading results…</div></div>';
+      summary.innerHTML = '';
+      try {
+        const r = await apiGet({ action: 'results' });
+        state.orgLoaded = true;
+        if (!r.ok) {
+          if (r.hidden) {
+            body.innerHTML = '<div class="org-empty"><div class="big">🔒</div><div>' + escapeHtml(r.error || 'Results are hidden until voting closes.') + '</div></div>';
+          } else {
+            body.innerHTML = '<div class="org-empty"><div class="big">⚠</div><div>' + escapeHtml(r.error || 'Could not load results.') + '</div></div>';
+          }
+          return;
+        }
+        // Summary tiles
+        const jc = r.judgesCompleted || 0;
+        const aj = r.activeJudges || 0;
+        const list = r.breakdown || [];
+        const totalVotes = list.reduce((s, x) => s + (x.count || 0), 0);
+        const highestAvg = list.length ? Math.max(...list.map(x => x.average || 0)) : 0;
+        summary.innerHTML = ''
+          + orgTile(jc + ' / ' + aj, 'Judges finished')
+          + orgTile(totalVotes, 'Total votes cast')
+          + orgTile(list.length, 'Contestants ranked')
+          + orgTile(highestAvg, 'Top average');
+        // Results table
+        if (!list.length) {
+          body.innerHTML = '<div class="org-empty"><div class="big">🎤</div><div>No contestants to display.</div></div>';
+          return;
+        }
+        const medals = ['🥇', '🥈', '🥉'];
+        body.innerHTML = '<div class="org-table-wrap"><table class="org-table">'
+          + '<thead><tr><th>Rank</th><th>Contestant</th><th class="num">Total</th><th class="num">Judges</th><th class="num">Average</th></tr></thead>'
+          + '<tbody>'
+          + list.map(b => {
+            const medal = b.rank <= 3 ? '<span class="medal">' + medals[b.rank - 1] + '</span>' : '';
+            return '<tr>'
+              + '<td class="rank">' + medal + b.rank + '</td>'
+              + '<td>' + escapeHtml(b.name) + ' <span class="contestant-id" style="margin-left:6px;">' + escapeHtml(b.contestantId) + '</span></td>'
+              + '<td class="num">' + b.total + '</td>'
+              + '<td class="num">' + b.count + '</td>'
+              + '<td class="num">' + (b.average === null ? '—' : b.average) + '</td>'
+              + '</tr>';
+          }).join('')
+          + '</tbody></table></div>';
+      } catch (e) {
+        body.innerHTML = '<div class="org-empty"><div class="big">⚠</div><div>' + escapeHtml(e.message || 'Network error.') + '</div></div>';
+      }
+    }
+    function orgTile(v, l) {
+      return '<div class="tile"><div class="v">' + escapeHtml(String(v)) + '</div><div class="l">' + escapeHtml(l) + '</div></div>';
     }
 
     // ============================================================
@@ -1950,6 +2427,8 @@
       if (k === 't') { e.preventDefault(); toggleTheme(); return; }
       if (k === 'u') { e.preventDefault(); $('#unscoredOnly').click(); return; }
       if (k === 'r') { e.preventDefault(); if (!$('#refreshBtn').disabled) $('#refreshBtn').click(); return; }
+      if (k === 'j' && state.judgeId) { e.preventDefault(); switchTab('judge', true); return; }
+      if (k === 'o' && state.judgeId) { e.preventDefault(); switchTab('organizer', true); return; }
       if (k === 's') {
         // Save the focused card (or the first card)
         const focused = document.activeElement && document.activeElement.closest('.card');
@@ -1983,6 +2462,13 @@
       $('#helpBtn').addEventListener('click', openShortcuts);
       $('#shortcutsClose').addEventListener('click', closeShortcuts);
       $('#shortcutsBtn').addEventListener('click', () => { closeExportMenu(); openShortcuts(); });
+      $('#tabJudge').addEventListener('click', () => switchTab('judge', true));
+      $('#tabOrganizer').addEventListener('click', () => switchTab('organizer', true));
+      window.addEventListener('hashchange', () => {
+        if (!state.judgeId) return;
+        const onOrg = location.hash === '#organizer';
+        switchTab(onOrg ? 'organizer' : 'judge', false);
+      });
       $('#shortcutsOverlay').addEventListener('click', (e) => {
         if (e.target === $('#shortcutsOverlay')) closeShortcuts();
       });

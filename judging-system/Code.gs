@@ -88,8 +88,9 @@ function doGet(e) {
         return handleResults_();
 
       case 'status':
-        // Enriched with active judge/contestant counts and server time so the
-        // frontend can show "X of Y judges" and sync clocks without extra calls.
+        // Enriched with active judge/contestant counts, anonymized
+        // judges-completed counter, and server time so the frontend can show
+        // "X of Y judges finished" and sync clocks without extra calls.
         return jsonOut_({
           ok: true,
           votingOpen: VOTING_OPEN,
@@ -98,6 +99,7 @@ function doGet(e) {
           showLiveResults: SHOW_LIVE_RESULTS,
           activeJudges: countActiveJudges_(),
           activeContestants: getActiveContestants_().length,
+          judgesCompleted: countJudgesCompleted_(),
           serverTime: formatNow_()
         });
 
@@ -297,8 +299,18 @@ function handleResults_() {
       error: 'Results are hidden until voting closes.'
     });
   }
+  // Existing totals shape — kept for backward compatibility.
   var results = getAggregateResults_();
-  return jsonOut_({ ok: true, results: results });
+  // New: per-contestant breakdown with rank/count/average for the organizer
+  // view. Still no Judge IDs or per-judge scores — only aggregates.
+  var breakdown = getResultsBreakdown_();
+  return jsonOut_({
+    ok: true,
+    results: results,
+    breakdown: breakdown.list,
+    judgesCompleted: breakdown.judgesCompleted,
+    activeJudges: breakdown.activeJudges
+  });
 }
 
 /**
@@ -537,6 +549,104 @@ function getAggregateResults_() {
     }
   }
   return totals;
+}
+
+/**
+ * Returns an array of per-contestant aggregate stats sorted by total desc,
+ * with rank, count of judges who scored, average, and the contestant name.
+ * Used by the organizer view. Never includes Judge IDs.
+ */
+function getResultsBreakdown_() {
+  var contestants = getActiveContestants_();
+  var sheet = getSpreadsheet_().getSheetByName(SHEET_VOTES);
+  var sums = {}, counts = {};
+  if (sheet && sheet.getLastRow() >= 2) {
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues();
+    for (var i = 0; i < data.length; i++) {
+      var cid = str_(data[i][2]);
+      var sc = Number(data[i][3]);
+      if (cid && isFinite(sc)) {
+        sums[cid] = (sums[cid] || 0) + sc;
+        counts[cid] = (counts[cid] || 0) + 1;
+      }
+    }
+  }
+  var list = contestants.map(function(c) {
+    var t = sums[c.id] || 0;
+    var n = counts[c.id] || 0;
+    return {
+      contestantId: c.id,
+      name: c.name,
+      total: t,
+      count: n,
+      average: n > 0 ? Math.round((t / n) * 100) / 100 : null
+    };
+  });
+  // Rank by total desc (ties share the same ordinal rank)
+  list.sort(function(a, b) { return (b.total || 0) - (a.total || 0); });
+  var rank = 0, prev = null;
+  for (var j = 0; j < list.length; j++) {
+    if (prev === null || list[j].total !== prev) {
+      rank = j + 1;
+    }
+    list[j].rank = rank;
+    prev = list[j].total;
+  }
+  return {
+    list: list,
+    judgesCompleted: countJudgesCompleted_(),
+    activeJudges: countActiveJudges_()
+  };
+}
+
+/**
+ * Anonymized count of active judges who have scored every active contestant.
+ * Used by the public status endpoint so judges can see overall progress
+ * without revealing which judges are done.
+ */
+function countJudgesCompleted_() {
+  var judges = getActiveJudgeIds_();
+  var contestants = getActiveContestants_();
+  if (!judges.length || !contestants.length) return 0;
+  var sheet = getSpreadsheet_().getSheetByName(SHEET_VOTES);
+  if (!sheet || sheet.getLastRow() < 2) return 0;
+  var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues();
+  // Build per-judge set of contestant IDs scored
+  var byJudge = {};
+  for (var i = 0; i < data.length; i++) {
+    var jid = str_(data[i][1]);
+    var cid = str_(data[i][2]);
+    if (jid && cid) {
+      if (!byJudge[jid]) byJudge[jid] = {};
+      byJudge[jid][cid] = true;
+    }
+  }
+  var completed = 0;
+  for (var j = 0; j < judges.length; j++) {
+    var set = byJudge[judges[j]] || {};
+    var ok = true;
+    for (var k = 0; k < contestants.length; k++) {
+      if (!set[contestants[k].id]) { ok = false; break; }
+    }
+    if (ok) completed++;
+  }
+  return completed;
+}
+
+/**
+ * Returns the Judge IDs of all active judges. Used internally for the
+ * judges-completed calculation. Never exposed through a public endpoint.
+ */
+function getActiveJudgeIds_() {
+  var sheet = getSpreadsheet_().getSheetByName(SHEET_JUDGES);
+  var last = sheet.getLastRow();
+  var ids = [];
+  if (last < 2) return ids;
+  var data = sheet.getRange(2, 1, last - 1, 3).getValues();
+  for (var i = 0; i < data.length; i++) {
+    if (str_(data[i][0]) && parseBool_(data[i][2])) ids.push(str_(data[i][0]));
+  }
+  return ids;
 }
 
 /**

@@ -185,7 +185,8 @@ All requests go to the single `/exec` URL.
 
 ### `GET ?action=status`
 Public. Returns score range, voting-open flag, active judge/contestant counts,
-and server time.
+anonymized `judgesCompleted` counter (how many active judges have scored every
+active contestant), and server time.
 
 ### `GET ?action=contestants`
 Returns active contestants only.
@@ -203,8 +204,10 @@ Authenticates the judge and returns their personal aggregate stats:
 
 ### `GET ?action=results`
 When `SHOW_LIVE_RESULTS = false` returns `{ ok:false, hidden:true }`. When
-enabled, returns **aggregate totals only** — never Judge IDs or per-judge
-scores.
+enabled, returns **aggregate totals** (`results`), a `breakdown` array sorted
+by total desc with `rank`/`count`/`average` per contestant, plus anonymized
+`judgesCompleted`/`activeJudges` counters. Never returns Judge IDs or
+per-judge scores.
 
 ### `POST` (body = JSON, `Content-Type: text/plain;charset=utf-8`)
 Body: `{ action: 'saveVote', judgeId, contestantId, score, password }`.
@@ -241,6 +244,13 @@ Validates in spec order, then upserts the vote inside a
 - **Undo last save** — toast action button reverts an update to the previous value
 - **Auto-save** (opt-in) — 2s debounce after typing; only fires when value differs
 - **Per-card relative timestamp** — "Updated 2m ago", auto-refreshes every 30s
+- **Anonymous judges-progress** indicator — "X of Y judges finished scoring"
+- **Score distribution mini-chart** — 5-quintile bar chart of the judge's own scores
+- **Card collapse** — collapse scored cards to focus on remaining contestants
+- **Organizer view** (Results tab or `#organizer` URL hash) — aggregate rankings
+  table with medals, totals, averages, and ranks. Only populates when
+  `SHOW_LIVE_RESULTS=true` on the backend; otherwise shows the "hidden" message.
+- **Theme auto-detect** — respects `prefers-color-scheme` on first visit
 
 ---
 
