@@ -603,3 +603,68 @@ Stage Summary:
 
 Recommended next phase:
 - Optional: sound effects toggle, ARIA/screen-reader audit pass over the notes/org UI, localization (fil/es), judge-side "my notes digest" print view, per-contestant note-required option (organizer setting), CSV import dry-run preview before committing.
+
+---
+Task ID: 90 (webDevReview round 9)
+Agent: webDevReview
+Task: QA baseline + planned features — INTERRUPTED by full tool-infrastructure outage (Bash/Read/Write/Edit/Glob/Grep/TodoWrite all failed for 100+ retries mid-round).
+
+Work Log:
+- QA baseline COMPLETED before outage: 62/62 unit tests passed; mock server healthy (votingOpen=true, 6 active contestants, 3 active judges).
+- Round-9 scope was planned (CSV import dry-run preview, judge-side print digest, sound effects toggle) but NOT implemented — all file tools became unavailable mid-round. NO code was modified; project stayed at the stable round-8 state.
+
+Stage Summary:
+- No changes shipped. Worklog untouched during the outage (Write tool down). This entry records the interruption.
+
+Recommended next phase (re-confirmed):
+1. Re-run baseline (unit tests + browser smoke).
+2. Implement: CSV import dry-run preview, judge-side print digest, sound effects toggle (all pure-frontend).
+3. Append standard worklog entry.
+
+---
+Task ID: 100 (webDevReview round 10)
+Agent: webDevReview
+Task: Post-outage recovery + three planned features (CSV dry-run preview, judge print digest, sound effects) + styling polish.
+
+Work Log:
+- TOOLS RECOVERED from the round-9 infrastructure outage. Verified project intact at round-8 state: 62/62 unit tests, mock server healthy, no stray files (the OUTAGE-NOTE.md write had failed — Write tool was down — so the worklog itself carried the record).
+- Recorded the round-9 outage entry in worklog.md (Task ID 90) for continuity.
+- QA BASELINE: 62/62 tests; browser smoke: session restore, save round-trip (C005=82 verified server-side), organizer view with 6 result rows + tools card, zero console errors.
+
+NEW FEATURE 1 — CSV DRY-RUN PREVIEW (organizer):
+- New "🔍 Dry-run preview" button next to Import roster. previewRosterImport() parses the textarea client-side, mirroring the Code.gs validation rules exactly (field count 3-4, contestant/judge type, ID/name presence, comma rule, active-flag parsing incl. empty→true, "type,..." header tolerance, blank-line skip) PLUS duplicate-ID detection within the paste (reports both line numbers).
+- Renders a per-line table (Line/Type/ID/Name/Active/Verdict/Details) with color-coded verdicts: ＋add (green) / ↻update (amber) / ＝skip (grey) / ✗error (red row background + exact reason). Header carries a "nothing written" flag; summary line counts add/update/skip/error and advises next steps. Contestant verdicts compare against the live roster (apiGet contestants); judge verdicts compare against cached notes data (best-effort; judges aren't listable by design — labeled "update" when known from notes).
+- Read-only guarantee verified: after previewing C001 rename + C040 add, server roster unchanged and C001 name untouched.
+- Clear button hides + empties the preview panel.
+
+NEW FEATURE 2 — JUDGE PRINT DIGEST:
+- New "Print my digest" item in the Export menu. exportDigestPrint() builds a personal sheet into #digestSheet: header ("🗂 My Judging Digest — <name>" + generated time + "Private" notice), stats row (scored/total, average, notes count, score range), and a full table (#/Contestant/Score/Note/Updated) with bold tabular scores, italic notes, and em-dashes for unscored.
+- body.print-digest print stylesheet shows ONLY the digest (hides topbar/footer/tabbar/dash-head/toolbar/cards/overlays), break-inside:avoid rows. afterprint + 2.5s fallback cleanup. Verified via agent-browser pdf: clean sheet with all rows (5/6 scored, Average 79.8, Notes 2).
+
+NEW FEATURE 3 — SOUND EFFECTS (opt-in):
+- Tiny synthesized WebAudio engine (soundPlay): 'save' rising two-tone, 'error' low square buzz, 'celebrate' C-E-G-C major arpeggio, 'toggle' soft click. No audio files; AudioContext created lazily on first playback; respects suspended-context resume.
+- Toggle lives in the Export menu ("Sound effects" with ✓ check state, aria-checked menuitemcheckbox), persisted to localStorage (jv_sound). Off by default. Hooks: onSaveClick success → 'save', failure → 'error', celebrate() → 'celebrate'.
+
+STYLING (mandatory polish):
+- .org-preview panel: dashed top divider, .op-head with info-blue "nothing written" flag pill, .op-table with uppercase micro-headers, code-font IDs, tabular-nums, colored .op-verdict spans, red-tinted error rows, summary with colored counts.
+- .digest-sheet: print-only table styles (uppercase headers, bold scores, italic notes, break-inside avoid).
+- #soundToggle menuitem: green ✓ check + green icon when on, proper aria-checked state.
+
+BROWSER E2E VERIFICATION (all passed, zero JS console errors):
+- Dry-run: 9-line mixed paste → verdicts exactly right (C001 update, C002 skip, C040 add, JUDGE-01 update-from-notes, JUDGE-50 add, alien/missing-id/duplicate/5-fields → 4 errors with line numbers). Server untouched. Clean paste → "1 add · 0 error — looks clean" → real Import → "✓ 1 added" → C040 on server.
+- Digest: print called, body.print-digest applied, header/stats/6 rows correct ("Judge Two", 5/6 scored, Average 79.8), class cleaned after; PDF content verified via pdftotext.
+- Sound: toggle on → aria-checked="true" + localStorage "1"; save played (C004 91 saved + server verified); toggle off persisted "0"; pref survives reload.
+- Celebration: scored remaining C010 + C040 → overlay shown at "7 / 7 contestants scored" → auto-hides.
+- Regressions: export menu items (Print/CSV/JSON/Digest/Sound), tab cycling, no overflow, notes/save flows all clean.
+
+VLM VISUAL QA:
+- Dry-run preview table: 9/10 — "Excellent" readability, "highly effective" color coding (green/amber/red), clear column alignment.
+
+Stage Summary:
+- 62/62 unit tests pass (backend unchanged — all round 10 work is frontend).
+- index.html: 4881 → 5232 lines. README updated (digest + sound bullets under Export; dry-run bullet under organizer tools).
+- 3 planned round-9 features delivered this round + outage recovery + outage record.
+- Sandbox access pattern unchanged: mock server on 0.0.0.0:8788 (SHOW_LIVE=true, judge pw 'sharedpw', organizer key 'orgpw'), browse http://localhost:81/?XTransformPort=8788.
+
+Recommended next phase:
+- Optional: ARIA/screen-reader audit pass, localization (fil/es), per-contestant note-required organizer setting, judge-activity timestamps in notes review, roster export (CSV download of current contestants/judges from the organizer panel), idle-sound (gentle reminder if voting open and no activity).

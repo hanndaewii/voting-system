@@ -290,7 +290,12 @@ script lock.
   from saved scores
 - **Dark mode** toggle (persisted to localStorage)
 - **Mobile-first responsive** design with safe-area insets and sticky footer
-- **Export** menu — Print / PDF (clean print stylesheet), CSV, JSON of own scores
+- **Export** menu — Print / PDF (clean print stylesheet), CSV, JSON of own scores,
+  **Print my digest** (one-sheet personal summary: every contestant with your
+  score, note, and last-updated time, plus scored/average/notes stats —
+  "Save as PDF" keeps a private copy), and **Sound effects** (opt-in toggle
+  persisted to localStorage: subtle synthesized cues on save / error /
+  celebration — no audio files, pure WebAudio)
 - **Keyboard shortcuts** overlay (press `?`): `/` search, `Esc` clear, `t` theme,
   `u` unscored-only, `r` refresh, `s` save focused card, `1-5` fill preset chip,
   arrow keys to step score
@@ -380,6 +385,10 @@ script lock.
     (drag-and-drop zone with visual feedback; BOM stripped; other extensions
     rejected); per-line error reporting; results and judge views refresh
     automatically after import
+  - **Dry-run preview** — validate the paste before committing: a per-line
+    table shows what each line WOULD do (＋ add / ↻ update / ＝ skip / ✗ error
+    with the exact reason, including duplicate-ID detection within the paste)
+    against the live roster. Runs entirely client-side — nothing is written
 
 ---
 

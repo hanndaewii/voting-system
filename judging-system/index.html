@@ -1661,6 +1661,83 @@
       body.print-notes .org-note-group > button.ong-head { background: #eee !important; color: #000 !important; }
     }
     .org-import-result { margin-top: 10px; font-size: 12.5px; }
+
+    /* Round 10 — CSV dry-run preview panel */
+    .org-preview { margin-top: 10px; border-top: 1px dashed var(--border-strong); padding-top: 10px; }
+    .org-preview.hidden { display: none; }
+    .op-head {
+      display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+      font-size: 12px; font-weight: 800; color: var(--text);
+      margin-bottom: 8px;
+    }
+    .op-head .op-flag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--info); background: var(--info-soft);
+      border: 1px solid rgba(14,165,233,.35); border-radius: 999px; padding: 2px 9px;
+    }
+    .op-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    .op-table th {
+      text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+      color: var(--text-muted); padding: 4px 8px; border-bottom: 1.5px solid var(--border-strong);
+      white-space: nowrap;
+    }
+    .op-table td {
+      padding: 5px 8px; border-bottom: 1px solid var(--border);
+      vertical-align: top; color: var(--text); word-break: break-word;
+    }
+    .op-table tr:last-child td { border-bottom: 0; }
+    .op-table code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; }
+    .op-verdict { font-weight: 800; white-space: nowrap; }
+    .op-verdict.add    { color: var(--success); }
+    .op-verdict.update { color: var(--warning); }
+    .op-verdict.skip   { color: var(--text-muted); }
+    .op-verdict.error  { color: var(--error); }
+    .op-row-error td { background: var(--error-soft); }
+    .op-mono { font-variant-numeric: tabular-nums; }
+    .op-actions-note { font-size: 11px; color: var(--text-muted); margin-top: 7px; }
+    .op-actions-note code { font-size: 10.5px; }
+
+    /* Round 10 — Judge digest print sheet */
+    .digest-sheet { display: none; }
+    .digest-sheet table { width: 100%; border-collapse: collapse; }
+    .digest-sheet .ds-head { margin-bottom: 14px; }
+    .digest-sheet .ds-head h2 { margin: 0 0 3px; font-size: 19px; }
+    .digest-sheet .ds-head .ds-meta { font-size: 11px; color: #555; }
+    .digest-sheet .ds-stats { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 12px; font-size: 11.5px; }
+    .digest-sheet .ds-stats span { font-weight: 700; }
+    .digest-sheet th {
+      text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em;
+      color: #333; padding: 5px 8px; border-bottom: 1.5px solid #666; white-space: nowrap;
+    }
+    .digest-sheet td {
+      padding: 6px 8px; border-bottom: 1px solid #bbb; vertical-align: top;
+      font-size: 11.5px; color: #111; word-break: break-word;
+    }
+    .digest-sheet td.ds-score { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .digest-sheet td.ds-note { font-style: italic; }
+    @media print {
+      body.print-digest header.topbar,
+      body.print-digest footer.site,
+      body.print-digest .tabbar,
+      body.print-digest #authView,
+      body.print-digest #orgView,
+      body.print-digest .dash-head,
+      body.print-digest .toolbar,
+      body.print-digest #contestantGrid,
+      body.print-digest #emptyState,
+      body.print-digest .toast-stack,
+      body.print-digest .overlay { display: none !important; }
+      body.print-digest .digest-sheet {
+        display: block !important;
+      }
+      body.print-digest .digest-sheet tr { break-inside: avoid; }
+    }
+
+    /* Round 10 — Sound menu item check state */
+    .dropdown-menu #soundToggle .dd-check { margin-left: auto; visibility: hidden; color: var(--success); font-weight: 800; }
+    .dropdown-menu #soundToggle.on .dd-check { visibility: visible; }
+    .dropdown-menu #soundToggle.on svg { color: var(--success); }
     .org-import-result .oir-line { display: flex; gap: 8px; align-items: baseline; padding: 2px 0; }
     .org-import-result .ok { color: var(--success); font-weight: 700; }
     .org-import-result .skip { color: var(--text-muted); }
@@ -1890,6 +1967,16 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                 Download JSON
               </button>
+              <button type="button" data-export="digest" role="menuitem" title="Print a personal digest sheet with your scores and notes">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Print my digest
+              </button>
+              <div class="dd-sep"></div>
+              <button type="button" id="soundToggle" role="menuitem" aria-role="menuitemcheckbox" aria-checked="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                <span>Sound effects</span>
+                <span class="dd-check" aria-hidden="true">✓</span>
+              </button>
               <div class="dd-sep"></div>
               <button type="button" id="tourReplayBtn" role="menuitem">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
@@ -1911,6 +1998,9 @@
           <div class="skeleton"></div>
           <div class="skeleton"></div>
         </div>
+
+        <!-- Judge digest — filled for printing only (body.print-digest) -->
+        <div class="digest-sheet" id="digestSheet" aria-hidden="true"></div>
 
         <div class="empty hidden" id="emptyState">
           <div class="big">🎤</div>
@@ -2007,9 +2097,11 @@
                 </div>
                 <div class="ot-actions" style="margin-top:10px;">
                   <button class="btn primary-strong" id="orgImportBtn" type="button">Import roster</button>
+                  <button class="btn subtle" id="orgPreviewBtn" type="button" title="Validate every line locally and preview what would be added / updated / skipped — nothing is written to the sheet">🔍 Dry-run preview</button>
                   <button class="btn subtle" id="orgImportClearBtn" type="button">Clear</button>
                 </div>
                 <div class="org-import-result" id="orgImportResult"></div>
+                <div class="org-preview hidden" id="orgPreviewPanel" aria-live="polite"></div>
               </div>
             </div>
           </div>
@@ -2133,6 +2225,7 @@
     const SS_KEY = 'jv_creds';
     const SS_ORG_KEY = 'jv_org_key';
     const LS_ORG_ANON = 'jv_org_anon';
+    const LS_SOUND = 'jv_sound';
     const THEME_KEY = 'jv_theme';
     const TOUR_KEY = 'jv_tour_done';
     const RETRYABLE_HINTS = [
@@ -2158,6 +2251,7 @@
       orgKey: null,            // organizer key (sessionStorage-backed)
       orgNotesData: null,       // last judgeNotes response (for toggle re-render + export)
       orgAnonymize: false,      // notes review: replace judge names with Judge A/B/C…
+      soundOn: false,           // subtle WebAudio UI cues (opt-in)
       uiScores: {},
       statuses: {},
       votingOpen: true,
@@ -2392,6 +2486,7 @@
     function celebrate() {
       const el = $('#celebrate');
       if (!el || el.classList.contains('show')) return;
+      soundPlay('celebrate');
       // confetti pieces
       const colors = ['#0f766e', '#14b8a6', '#b45309', '#f59e0b', '#16a34a', '#22c55e', '#dc2626'];
       for (let i = 0; i < 70; i++) {
@@ -3387,6 +3482,7 @@
           ? { label: 'Undo', fn: () => undoLastSave() }
           : null;
         toast((isNew ? 'Saved ' : 'Updated ') + cid + ' = ' + state.votes[cid], 'success', 4000, undoAction);
+        soundPlay('save');
         updateProgress();
         refreshStats();
         // Enter-to-next: when the save was triggered by Enter, jump straight
@@ -3398,6 +3494,7 @@
       } else {
         setCardStatus(cid, 'error', res.error || 'Save failed.', 'error');
         toast(res.error || 'Save failed for ' + cid, 'error');
+        soundPlay('error');
         if (saveBtn) saveBtn.textContent = (state.votes[cid] !== undefined && state.votes[cid] !== null) ? 'Update Score' : 'Save Score';
       }
     }
@@ -3962,6 +4059,249 @@
       toast('Use your browser\'s print dialog (or "Save as PDF").', 'info', 3000);
       setTimeout(() => window.print(), 350);
     }
+
+    // ============================================================
+    // Round 10 — Judge digest (print my scores + notes)
+    // ============================================================
+    /**
+     * Build a personal digest sheet (contestant / score / note / updated)
+     * into #digestSheet, then print it with the body.print-digest stylesheet.
+     * "Save as PDF" from the print dialog produces a shareable file.
+     */
+    function exportDigestPrint() {
+      const rows = buildScoreRows();
+      const sheet = $('#digestSheet');
+      const when = new Date().toLocaleString();
+      const scored = rows.filter(r => r.score !== '' && r.score !== null && r.score !== undefined);
+      const sum = scored.reduce((a, r) => a + Number(r.score), 0);
+      const avg = scored.length ? (sum / scored.length).toFixed(1) : '—';
+      const notesCount = rows.filter(r => r.note).length;
+      sheet.innerHTML =
+        '<div class="ds-head">' +
+          '<h2>🗂 My Judging Digest — ' + escapeHtml(state.judgeName || state.judgeId || '') + '</h2>' +
+          '<div class="ds-meta">Generated ' + escapeHtml(when) + ' · Private — contains your scores and notes only</div>' +
+        '</div>' +
+        '<div class="ds-stats">' +
+          '<span>' + scored.length + ' / ' + rows.length + ' scored</span>' +
+          '<span>Average ' + escapeHtml(String(avg)) + '</span>' +
+          '<span>Notes ' + notesCount + '</span>' +
+          '<span>Range ' + state.minScore + '–' + state.maxScore + '</span>' +
+        '</div>' +
+        '<table>' +
+          '<thead><tr><th>#</th><th>Contestant</th><th>Score</th><th>Note</th><th>Updated</th></tr></thead>' +
+          '<tbody>' +
+          rows.map((r, i) => {
+            const sc = (r.score === '' || r.score === null || r.score === undefined) ? '—' : r.score;
+            return '<tr>' +
+              '<td class="op-mono">' + (i + 1) + '</td>' +
+              '<td><strong>' + escapeHtml(r.name) + '</strong><br><span style="font-size:9.5px;color:#666;">' + escapeHtml(r.id) + '</span></td>' +
+              '<td class="ds-score">' + escapeHtml(String(sc)) + '</td>' +
+              '<td class="ds-note">' + (r.note ? escapeHtml(r.note) : '<span style="color:#999;">—</span>') + '</td>' +
+              '<td style="white-space:nowrap;font-size:10px;color:#555;">' + escapeHtml(r.timestamp || '—') + '</td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody>' +
+        '</table>';
+      document.body.classList.add('print-digest');
+      let cleaned = false;
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        document.body.classList.remove('print-digest');
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      toast('Printing your digest — "Save as PDF" to keep a copy.', 'info', 3200);
+      setTimeout(() => {
+        window.print();
+        setTimeout(cleanup, 2500);
+      }, 200);
+    }
+
+    // ============================================================
+    // Round 10 — Sound effects (subtle WebAudio cues, opt-in)
+    // ============================================================
+    /**
+     * Tiny synthesized sound engine — no audio files, zero network weight.
+     * Sounds: 'save' (rising two-tone), 'error' (low buzz), 'celebrate'
+     * (major arpeggio), 'toggle' (soft click). Lazily creates an
+     * AudioContext on the first user-gesture-driven playback.
+     */
+    let soundCtx = null;
+    function soundPlay(kind) {
+      if (!state.soundOn) return;
+      try {
+        if (!soundCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          soundCtx = new AC();
+        }
+        if (soundCtx.state === 'suspended') soundCtx.resume().catch(() => {});
+        const t0 = soundCtx.currentTime;
+        function tone(freq, start, dur, type, vol) {
+          const osc = soundCtx.createOscillator();
+          const gain = soundCtx.createGain();
+          osc.type = type || 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.0001, t0 + start);
+          gain.gain.exponentialRampToValueAtTime(vol || 0.06, t0 + start + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + start + dur);
+          osc.connect(gain);
+          gain.connect(soundCtx.destination);
+          osc.start(t0 + start);
+          osc.stop(t0 + start + dur + 0.02);
+        }
+        if (kind === 'save') {           // gentle rising two-tone
+          tone(660, 0, 0.09, 'sine', 0.05);
+          tone(880, 0.085, 0.12, 'sine', 0.05);
+        } else if (kind === 'error') {   // low double-buzz
+          tone(180, 0, 0.08, 'square', 0.035);
+          tone(150, 0.1, 0.1, 'square', 0.035);
+        } else if (kind === 'celebrate') { // quick major arpeggio C-E-G-C
+          tone(523.25, 0, 0.1, 'triangle', 0.05);
+          tone(659.25, 0.09, 0.1, 'triangle', 0.05);
+          tone(783.99, 0.18, 0.1, 'triangle', 0.05);
+          tone(1046.5, 0.27, 0.22, 'triangle', 0.06);
+        } else if (kind === 'toggle') {  // soft click
+          tone(440, 0, 0.045, 'sine', 0.03);
+        }
+      } catch (e) { /* sound is best-effort only */ }
+    }
+    function loadSoundPref() {
+      try { return localStorage.getItem(LS_SOUND) === '1'; } catch (e) { return false; }
+    }
+    function setSoundPref(on) {
+      state.soundOn = !!on;
+      try { localStorage.setItem(LS_SOUND, state.soundOn ? '1' : '0'); } catch (e) {}
+      const btn = $('#soundToggle');
+      if (btn) {
+        btn.classList.toggle('on', state.soundOn);
+        btn.setAttribute('aria-checked', state.soundOn ? 'true' : 'false');
+      }
+    }
+
+    // ============================================================
+    // Round 10 — CSV import dry-run preview (client-side validation)
+    // ============================================================
+    /**
+     * Parse the import textarea locally and preview what the server WOULD do:
+     * per-line verdicts (add / update / skip / error with reason) against the
+     * current roster fetched from the contestants endpoint + judgeNotes-derived
+     * judge list is NOT needed — judges come from the status count only.
+     * Mirrors the Code.gs validation rules exactly (field count, type, id,
+     * name, comma rule, active flag parsing, header tolerance, blank lines).
+     * Nothing is written to the sheet.
+     */
+    async function previewRosterImport() {
+      const csv = $('#orgImportCsv').value;
+      const panel = $('#orgPreviewPanel');
+      if (!csv.trim()) {
+        toast('Paste some CSV lines first.', 'error', 2600);
+        panel.classList.add('hidden');
+        return;
+      }
+      // Current roster snapshot for add/update/skip verdicts
+      let knownContestants = {};   // id -> {name, active}
+      let knownJudges = {};
+      try {
+        const conc = await apiGet({ action: 'contestants' });
+        if (conc && conc.ok) {
+          (conc.contestants || []).forEach(c => { knownContestants[c.id] = { name: c.name, active: true }; });
+        }
+        // Active judges aren't listed by any endpoint by design; the preview
+        // uses judgeStats only for the count. Update/skip verdicts for judges
+        // rely on the import result itself — preview marks them as
+        // "add (new)" vs "update/skip (exists)" optimistically via a probe
+        // save is NOT possible. Instead we fetch via judgeNotes? No — that
+        // only returns judges who wrote notes. Keep honest: mark judge rows
+        // as unknown-existing when we cannot verify, unless the ID appears
+        // in the notes data we may already have.
+        if (state.orgNotesData && state.orgNotesData.notes) {
+          state.orgNotesData.notes.forEach(g => g.entries.forEach(en => {
+            knownJudges[en.judgeId] = true;
+          }));
+        }
+      } catch (e) { /* preview without roster context */ }
+
+      const lines = csv.split(/\r?\n/);
+      const rows = [];
+      let adds = 0, updates = 0, skips = 0, errors = 0;
+      let seen = {}; // duplicate IDs within the same paste
+      lines.forEach((rawLine, i) => {
+        const lineNo = i + 1;
+        const line = String(rawLine).trim();
+        if (!line) return; // blank ignored
+        if (lineNo === 1 && /^type\s*,/i.test(line)) { return; } // header tolerated
+        const parts = line.split(',');
+        const base = { line: lineNo };
+        if (parts.length < 3 || parts.length > 4) {
+          rows.push({ ...base, verdict: 'error', reason: 'Expected 3 or 4 comma-separated fields, got ' + parts.length + '.' });
+          errors++;
+          return;
+        }
+        const type = String(parts[0] || '').trim().toLowerCase();
+        const id = String(parts[1] || '').trim();
+        const name = String(parts[2] || '').trim();
+        const activeRaw = parts.length >= 4 ? String(parts[3]).trim() : '';
+        const active = activeRaw !== '' ? ['true','1','yes','y','t'].indexOf(activeRaw.toLowerCase()) !== -1 : true;
+        if (type !== 'contestant' && type !== 'judge') {
+          rows.push({ ...base, verdict: 'error', type: parts[0], id, name, reason: 'Unknown type "' + parts[0] + '" — use contestant or judge.' });
+          errors++;
+          return;
+        }
+        if (!id) { rows.push({ ...base, verdict: 'error', type, name, reason: 'Missing ID.' }); errors++; return; }
+        if (!name) { rows.push({ ...base, verdict: 'error', type, id, reason: 'Missing name.' }); errors++; return; }
+        if (id.indexOf(',') !== -1) { rows.push({ ...base, verdict: 'error', type, id, name, reason: 'IDs must not contain commas.' }); errors++; return; }
+        if (seen[id]) {
+          rows.push({ ...base, verdict: 'error', type, id, name, reason: 'Duplicate ID — also appears on line ' + seen[id] + '.' });
+          errors++;
+          return;
+        }
+        seen[id] = lineNo;
+        let verdict;
+        if (type === 'contestant') {
+          const k = knownContestants[id];
+          if (!k) verdict = 'add';
+          else if (k.name === name && k.active === active) verdict = 'skip';
+          else verdict = 'update';
+        } else {
+          // Judges: known only if they left a note (from cached notes data)
+          verdict = knownJudges[id] ? 'update' : 'add';
+        }
+        if (verdict === 'add') adds++;
+        else if (verdict === 'update') updates++;
+        else skips++;
+        rows.push({ ...base, verdict, type, id, name, active, reason: verdict === 'update' && type === 'judge' ? 'Judge exists — name/active will be updated' : '' });
+      });
+
+      const total = adds + updates + skips + errors;
+      const verdictLabel = { add: '＋ add', update: '↻ update', skip: '＝ skip', error: '✗ error' };
+      panel.innerHTML =
+        '<div class="op-head">' +
+          '<span>Dry-run preview</span>' +
+          '<span class="op-flag">nothing written</span>' +
+          '<span style="font-weight:600;color:var(--text-muted);">' + total + ' line' + (total === 1 ? '' : 's') + ' parsed</span>' +
+        '</div>' +
+        '<table class="op-table">' +
+          '<thead><tr><th>Line</th><th>Type</th><th>ID</th><th>Name</th><th>Active</th><th>Verdict</th><th>Details</th></tr></thead>' +
+          '<tbody>' +
+          rows.map(r =>
+            '<tr class="' + (r.verdict === 'error' ? 'op-row-error' : '') + '">' +
+              '<td class="op-mono">' + r.line + '</td>' +
+              '<td>' + (r.type ? '<code>' + escapeHtml(String(r.type)) + '</code>' : '') + '</td>' +
+              '<td><code>' + escapeHtml(r.id || '') + '</code></td>' +
+              '<td>' + escapeHtml(r.name || '') + '</td>' +
+              '<td class="op-mono">' + (r.verdict === 'error' ? '—' : (r.active ? 'yes' : 'no')) + '</td>' +
+              '<td><span class="op-verdict ' + r.verdict + '">' + verdictLabel[r.verdict] + '</span></td>' +
+              '<td style="color:var(--text-muted);">' + escapeHtml(r.reason || '') + '</td>' +
+            '</tr>'
+          ).join('') +
+          '</tbody>' +
+        '</table>' +
+        '<div class="op-actions-note">Summary: <strong style="color:var(--success);">' + adds + ' add</strong> · <strong style="color:var(--warning);">' + updates + ' update</strong> · <strong style="color:var(--text-muted);">' + skips + ' skip</strong> · <strong style="color:var(--error);">' + errors + ' error</strong>' +
+        (errors ? ' — fix the error lines before importing.' : ' — looks clean. <strong>Import roster</strong> commits these changes.') + '</div>';
+      panel.classList.remove('hidden');
+    }
     function downloadBlob(text, filename, mime) {
       const blob = new Blob([text], { type: mime + ';charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -4366,7 +4706,16 @@
           if (kind === 'csv') exportCSV();
           else if (kind === 'json') exportJSON();
           else if (kind === 'print') exportPrint();
+          else if (kind === 'digest') exportDigestPrint();
         });
+      });
+
+      // Sound effects toggle (round 10) — opt-in, persisted
+      setSoundPref(loadSoundPref());
+      $('#soundToggle').addEventListener('click', () => {
+        setSoundPref(!state.soundOn);
+        if (state.soundOn) soundPlay('toggle');
+        toast(state.soundOn ? 'Sound effects on — subtle cues on save / error / celebration.' : 'Sound effects off.', 'info', 2400);
       });
 
       $('#searchInput').addEventListener('input', (e) => {
@@ -4440,10 +4789,13 @@
       });
       $('#orgNotesBtn').addEventListener('click', loadOrganizerNotes);
       $('#orgImportBtn').addEventListener('click', runRosterImport);
+      $('#orgPreviewBtn').addEventListener('click', previewRosterImport);
       $('#orgImportClearBtn').addEventListener('click', () => {
         $('#orgImportCsv').value = '';
         $('#orgImportResult').innerHTML = '';
         $('#orgCsvFile').value = '';
+        $('#orgPreviewPanel').classList.add('hidden');
+        $('#orgPreviewPanel').innerHTML = '';
         $('#orgImportCsv').focus();
       });
 
