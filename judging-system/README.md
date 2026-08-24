@@ -251,6 +251,15 @@ Validates in spec order, then upserts the vote inside a
   table with medals, totals, averages, and ranks. Only populates when
   `SHOW_LIVE_RESULTS=true` on the backend; otherwise shows the "hidden" message.
 - **Theme auto-detect** — respects `prefers-color-scheme` on first visit
+- **Real-time auto-refresh** — polls status + myVotes every 30s; detects voting-open
+  flips, new/removed contestants, and judge-name changes; toasts on voting flip
+- **Sync indicator** — "Synced Xs ago" in the dashboard header, with a spinner while polling
+- **Connection status dot** — green when online, red+blink when offline
+- **Compare mode** (opt-in, `c`) — shows group averages on each card when
+  `SHOW_LIVE_RESULTS=true`; disabled otherwise to avoid biasing active judging
+- **Export results to CSV** (organizer, Results tab) — downloads the rankings table
+- **Card density toggle** — Comfortable / Compact, persisted to localStorage
+- **Organizer view refresh button** — re-fetch results without a full page reload
 
 ---
 

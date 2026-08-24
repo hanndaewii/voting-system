@@ -1042,6 +1042,111 @@
     .tabbar button:hover:not(.active) { background: var(--card-soft); color: var(--text); }
 
     /* =========================================================
+       Connection status dot (online/offline)
+       ========================================================= */
+    .conn-dot {
+      width: 8px; height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+      transition: background .25s, box-shadow .25s;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+    .conn-dot.offline {
+      background: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+      animation: connBlink 1.2s ease-in-out infinite;
+    }
+    @keyframes connBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* =========================================================
+       Sync indicator ("synced Xs ago")
+       ========================================================= */
+    .sync-indicator {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      margin-left: auto;
+    }
+    .sync-indicator .dot {
+      width: 6px; height: 6px;
+      border-radius: 999px;
+      background: var(--success);
+      flex: 0 0 auto;
+    }
+    .sync-indicator.syncing .dot {
+      background: var(--warning);
+      animation: spin 1s linear infinite;
+      border-radius: 50%;
+      border: 1.5px solid var(--warning);
+      border-top-color: transparent;
+      width: 10px; height: 10px;
+      box-shadow: none;
+    }
+    .sync-indicator .num { color: var(--text); font-weight: 800; }
+
+    /* =========================================================
+       Card density (compact / comfortable)
+       ========================================================= */
+    .density-compact .grid { gap: 8px; }
+    .density-compact .card { padding: 10px 12px; gap: 8px; }
+    .density-compact .contestant-name { font-size: 14px; }
+    .density-compact .score-row input[type="number"] { font-size: 16px; height: 40px; }
+    .density-compact .score-row .btn { min-width: 100px; height: 40px; min-height: 40px; font-size: 13px; }
+    .density-compact .chips .chip { height: 28px; font-size: 12px; }
+    .density-compact .hint { display: none; }
+    .density-compact .card-timestamp { display: none; }
+
+    /* =========================================================
+       Comparison badge (group average, opt-in)
+       ========================================================= */
+    .compare-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--info-soft);
+      color: var(--info);
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      margin-top: 4px;
+    }
+    .compare-badge .ic { font-size: 11px; }
+    .compare-badge .v { font-variant-numeric: tabular-nums; }
+
+    /* =========================================================
+       Density toggle in toolbar
+       ========================================================= */
+    .density-toggle {
+      display: inline-flex;
+      border: 1.5px solid var(--border-strong);
+      border-radius: var(--radius-xs);
+      overflow: hidden;
+      height: 40px;
+    }
+    .density-toggle button {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 0 10px;
+      font-size: 11px; font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      transition: all .12s;
+    }
+    .density-toggle button.active {
+      background: var(--primary);
+      color: var(--primary-fg);
+    }
+    .density-toggle button:hover:not(.active) { background: var(--card-soft); }
+
+    /* =========================================================
        Print stylesheet — clean export view
        ========================================================= */
     @media print {
@@ -1089,6 +1194,7 @@
           <span>JUDGED VOTE</span>
         </div>
         <div class="topbar-meta">
+          <span class="conn-dot" id="connDot" title="Online" aria-label="Connection status: online"></span>
           <span class="pill open" id="pillOpen">Voting Open</span>
           <span class="pill closed hidden" id="pillClosed">Voting Closed</span>
           <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
@@ -1153,6 +1259,10 @@
           <div class="dash-title">
             <h2>Your Judging <span class="judge-name" id="judgeNameLabel"></span></h2>
             <div class="dash-actions">
+              <span class="sync-indicator" id="syncIndicator" style="display:none;">
+                <span class="dot"></span>
+                <span>Synced <span class="num" id="syncNum">0s</span> ago</span>
+              </span>
               <button class="btn subtle" id="refreshBtn" type="button" title="Reload from Google Sheets">↻ Refresh</button>
               <button class="btn ghost" id="logoutBtn" type="button">Log out</button>
             </div>
@@ -1197,6 +1307,14 @@
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>
             Unscored only
           </button>
+          <button class="toggle-chip" id="compareToggle" type="button" title="Show group averages alongside your scores (available when results are enabled)" disabled style="opacity:.5;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+            Compare
+          </button>
+          <div class="density-toggle" id="densityToggle" title="Card density">
+            <button type="button" data-density="comfortable" class="active">Comfortable</button>
+            <button type="button" data-density="compact">Compact</button>
+          </div>
           <button class="btn subtle" id="saveAllBtn" type="button" style="height:40px;min-height:40px;font-size:13px;padding:0 14px;">Save all pending</button>
           <button class="toggle-chip" id="autoSaveToggle" type="button" title="Auto-save scores 2 seconds after you stop typing">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>
@@ -1250,9 +1368,20 @@
            ========================================================= -->
       <section id="orgView" class="org-view hidden">
         <div class="org-card">
-          <h2>Aggregate results</h2>
-          <div class="sub">Read-only. Per-judge scores are never exposed — only contestant totals, averages, and ranks.</div>
-          <div class="org-summary" id="orgSummary"></div>
+          <div class="dash-title">
+            <div>
+              <h2>Aggregate results</h2>
+              <div class="sub" style="margin:0;">Read-only. Per-judge scores are never exposed — only contestant totals, averages, and ranks.</div>
+            </div>
+            <div class="dash-actions">
+              <button class="btn subtle" id="orgRefreshBtn" type="button" title="Refresh results">↻ Refresh</button>
+              <button class="btn subtle" id="orgExportCsvBtn" type="button" disabled style="opacity:.5;" title="Download results as CSV">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                CSV
+              </button>
+            </div>
+          </div>
+          <div class="org-summary" id="orgSummary" style="margin-top:18px;"></div>
           <div id="orgBody">
             <div class="org-empty">
               <div class="big">🔒</div>
@@ -1309,6 +1438,7 @@
         <div class="shortcut-row"><span class="desc">Save focused card</span><span class="keys"><span class="kbd">S</span></span></div>
         <div class="shortcut-row"><span class="desc">Toggle dark mode</span><span class="keys"><span class="kbd">T</span></span></div>
         <div class="shortcut-row"><span class="desc">Toggle unscored-only filter</span><span class="keys"><span class="kbd">U</span></span></div>
+        <div class="shortcut-row"><span class="desc">Toggle compare mode (group averages)</span><span class="keys"><span class="kbd">C</span></span></div>
         <div class="shortcut-row"><span class="desc">Switch to Judging tab</span><span class="keys"><span class="kbd">J</span></span></div>
         <div class="shortcut-row"><span class="desc">Switch to Results tab</span><span class="keys"><span class="kbd">O</span></span></div>
         <div class="shortcut-row"><span class="desc">Refresh from Google Sheets</span><span class="keys"><span class="kbd">R</span></span></div>
@@ -1367,7 +1497,13 @@
       collapsedCards: {},      // { contestantId: true } for collapse state
       judgesCompleted: 0,      // anonymized count from status endpoint
       showLiveResults: false,  // mirrors backend SHOW_LIVE_RESULTS
-      orgLoaded: false         // whether organizer view data has been fetched
+      orgLoaded: false,        // whether organizer view data has been fetched
+      lastSync: 0,             // timestamp of last successful poll
+      pollTimer: null,        // setInterval id for periodic polling
+      syncTimer: null,        // setInterval id for "synced Xs ago" text
+      compareMode: false,     // opt-in: show group averages on cards
+      comparisonData: {},     // { contestantId: average } from results breakdown
+      density: 'comfortable'  // 'comfortable' | 'compact'
     };
 
     // ============================================================
@@ -1642,6 +1778,7 @@
     async function enterDashboard() {
       $('#authView').classList.add('hidden');
       $('#tabbar').style.display = '';
+      loadDensity();
       // Respect URL hash: #organizer shows the results view
       const startOnOrg = location.hash === '#organizer';
       if (startOnOrg) {
@@ -1657,6 +1794,7 @@
       renderContestants();
       updateProgress();
       refreshStats();
+      startAutoRefresh();
     }
 
     async function loadStatusAndContestants() {
@@ -1673,6 +1811,12 @@
           state.activeContestants = status.activeContestants || 0;
           state.judgesCompleted = status.judgesCompleted || 0;
           state.showLiveResults = !!status.showLiveResults;
+          // Enable/disable compare toggle based on showLiveResults (mirrors pollOnce)
+          const cmpBtn = $('#compareToggle');
+          if (cmpBtn) {
+            cmpBtn.disabled = !state.showLiveResults;
+            cmpBtn.style.opacity = state.showLiveResults ? '' : '.5';
+          }
         }
         if (contestRes && contestRes.ok) {
           state.contestants = contestRes.contestants || [];
@@ -1687,6 +1831,233 @@
       $('#rangeLabel').textContent = 'Range ' + state.minScore + '–' + state.maxScore;
       $('#saveAllBtn').disabled = !state.votingOpen;
       renderJudgesProgress();
+    }
+
+    // ============================================================
+    // Real-time auto-refresh — poll status + myVotes periodically so the
+    // judge sees organizer changes (new contestants, voting closed, judge
+    // name edits) without manually refreshing.
+    // ============================================================
+    const POLL_INTERVAL_MS = 30000; // 30s
+    const SYNC_TEXT_INTERVAL_MS = 5000; // 5s
+
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      state.lastSync = Date.now();
+      state.pollTimer = setInterval(pollOnce, POLL_INTERVAL_MS);
+      state.syncTimer = setInterval(renderSyncIndicator, SYNC_TEXT_INTERVAL_MS);
+      // online/offline events
+      window.addEventListener('online', onConnectionChange);
+      window.addEventListener('offline', onConnectionChange);
+      onConnectionChange();
+      renderSyncIndicator(); // show immediately, don't wait for first interval tick
+    }
+    function stopAutoRefresh() {
+      if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+      if (state.syncTimer) { clearInterval(state.syncTimer); state.syncTimer = null; }
+      window.removeEventListener('online', onConnectionChange);
+      window.removeEventListener('offline', onConnectionChange);
+    }
+    function onConnectionChange() {
+      const online = navigator.onLine;
+      const dot = $('#connDot');
+      if (dot) {
+        dot.classList.toggle('offline', !online);
+        dot.title = online ? 'Online' : 'Offline — changes will retry when reconnected';
+        dot.setAttribute('aria-label', 'Connection: ' + (online ? 'online' : 'offline'));
+      }
+    }
+    async function pollOnce() {
+      if (!state.judgeId) return;
+      const syncEl = $('#syncIndicator');
+      if (syncEl) syncEl.classList.add('syncing');
+      try {
+        // 1) Status poll — always
+        const status = await apiGet({ action: 'status' }).catch(() => null);
+        if (status && status.ok) {
+          const prevVotingOpen = state.votingOpen;
+          const prevContestantCount = state.activeContestants;
+          state.votingOpen = !!status.votingOpen;
+          state.minScore = status.minScore || state.minScore;
+          state.maxScore = status.maxScore || state.maxScore;
+          state.activeJudges = status.activeJudges || 0;
+          state.activeContestants = status.activeContestants || 0;
+          state.judgesCompleted = status.judgesCompleted || 0;
+          state.showLiveResults = !!status.showLiveResults;
+          // Detect voting-open flip
+          if (prevVotingOpen !== state.votingOpen) {
+            $('#pillOpen').classList.toggle('hidden', !state.votingOpen);
+            $('#pillClosed').classList.toggle('hidden', state.votingOpen);
+            $('#saveAllBtn').disabled = !state.votingOpen;
+            // Re-enable/disable score inputs
+            document.querySelectorAll('.card [data-score]').forEach(i => i.disabled = !state.votingOpen);
+            document.querySelectorAll('.card [data-save]').forEach(b => b.disabled = !state.votingOpen);
+            toast(state.votingOpen ? 'Voting is now OPEN — you can save scores.' : 'Voting is now CLOSED — saves are disabled.',
+              state.votingOpen ? 'success' : 'info', 5000);
+          }
+          renderJudgesProgress();
+          // Detect contestant count change → re-fetch contestants + re-render
+          if (status.activeContestants !== prevContestantCount) {
+            const cr = await apiGet({ action: 'contestants' }).catch(() => null);
+            if (cr && cr.ok) {
+              state.contestants = cr.contestants || [];
+              renderContestants();
+              updateProgress();
+            }
+          }
+          // Enable/disable compare toggle based on showLiveResults
+          const cmpBtn = $('#compareToggle');
+          if (cmpBtn) {
+            cmpBtn.disabled = !state.showLiveResults;
+            cmpBtn.style.opacity = state.showLiveResults ? '' : '.5';
+          }
+        }
+        // 2) myVotes poll — only if no unsaved input changes (to avoid clobbering)
+        if (!hasUnsavedChanges()) {
+          const r = await apiGet({ action: 'myVotes', judgeId: state.judgeId, password: state.password }).catch(() => null);
+          if (r && r.ok) {
+            const prevName = state.judgeName;
+            const prevVotes = JSON.stringify(state.votes);
+            state.judgeName = r.judgeName || state.judgeName;
+            state.votes = r.votes || {};
+            state.timestamps = r.timestamps || {};
+            if (prevName !== state.judgeName) {
+              $('#judgeNameLabel').textContent = state.judgeName ? '· ' + state.judgeName : '';
+            }
+            if (prevVotes !== JSON.stringify(state.votes)) {
+              renderContestants();
+              updateProgress();
+              refreshStats();
+            }
+          }
+        }
+        // 3) Comparison data refresh if compare mode is on
+        if (state.compareMode && state.showLiveResults) {
+          await loadComparisonData();
+        }
+        state.lastSync = Date.now();
+      } catch (e) {
+        // Network errors are expected occasionally; the connection dot handles UI.
+      } finally {
+        if (syncEl) syncEl.classList.remove('syncing');
+        renderSyncIndicator();
+      }
+    }
+    function renderSyncIndicator() {
+      const el = $('#syncIndicator');
+      if (!el || !state.judgeId) { if (el) el.style.display = 'none'; return; }
+      el.style.display = 'inline-flex';
+      if (!state.lastSync) { $('#syncNum').textContent = '—'; return; }
+      const sec = Math.floor((Date.now() - state.lastSync) / 1000);
+      let label;
+      if (sec < 5) label = 'just now';
+      else if (sec < 60) label = sec + 's';
+      else { const m = Math.floor(sec / 60); label = m + 'm'; }
+      $('#syncNum').textContent = label;
+    }
+
+    // ============================================================
+    // Comparison mode — show group averages next to judge's score
+    // (only available when SHOW_LIVE_RESULTS=true on the backend)
+    // ============================================================
+    async function toggleCompare() {
+      if (!state.showLiveResults) {
+        toast('Comparison is only available after the organizer enables results.', 'info', 2800);
+        return;
+      }
+      state.compareMode = !state.compareMode;
+      $('#compareToggle').classList.toggle('active', state.compareMode);
+      if (state.compareMode) {
+        toast('Compare mode ON — group averages will appear on each card.', 'info', 2800);
+        await loadComparisonData();
+        renderComparisonBadges();
+      } else {
+        toast('Compare mode OFF.', 'info', 1800);
+        clearComparisonBadges();
+      }
+    }
+    async function loadComparisonData() {
+      try {
+        const r = await apiGet({ action: 'results' });
+        if (r && r.ok && Array.isArray(r.breakdown)) {
+          state.comparisonData = {};
+          r.breakdown.forEach(b => {
+            state.comparisonData[b.contestantId] = b.average;
+          });
+        }
+      } catch (e) { /* silent */ }
+    }
+    function renderComparisonBadges() {
+      $$('#contestantGrid .card').forEach(card => {
+        const cid = card.getAttribute('data-cid');
+        const avg = state.comparisonData[cid];
+        if (avg === undefined || avg === null) return;
+        let badge = card.querySelector('.compare-badge');
+        if (!badge) {
+          badge = document.createElement('div');
+          badge.className = 'compare-badge';
+          badge.setAttribute('data-compare', '');
+          // Insert after the card-head's right column
+          const scoreRow = card.querySelector('.score-row');
+          if (scoreRow && scoreRow.parentNode) {
+            scoreRow.parentNode.insertBefore(badge, scoreRow.nextSibling);
+          }
+        }
+        badge.innerHTML = '<span class="ic">📊</span> Group avg <span class="v">' + escapeHtml(String(avg)) + '</span>';
+      });
+    }
+    function clearComparisonBadges() {
+      document.querySelectorAll('.compare-badge[data-compare]').forEach(el => el.remove());
+    }
+
+    // ============================================================
+    // Card density toggle (compact / comfortable)
+    // ============================================================
+    function loadDensity() {
+      let d = 'comfortable';
+      try { d = localStorage.getItem('jv_density') || 'comfortable'; } catch (e) {}
+      if (d !== 'compact') d = 'comfortable';
+      state.density = d;
+      applyDensity(d);
+    }
+    function applyDensity(d) {
+      state.density = d;
+      document.body.classList.toggle('density-compact', d === 'compact');
+      $$('[data-density]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-density') === d);
+      });
+    }
+    function toggleDensity(d) {
+      applyDensity(d);
+      try { localStorage.setItem('jv_density', d); } catch (e) {}
+      toast(d === 'compact' ? 'Compact density.' : 'Comfortable density.', 'info', 1500);
+    }
+
+    // ============================================================
+    // Export results to CSV (organizer, when SHOW_LIVE_RESULTS=true)
+    // ============================================================
+    async function exportResultsCSV() {
+      if (!state.showLiveResults) {
+        toast('Results are hidden — cannot export.', 'info', 2200);
+        return;
+      }
+      let breakdown = [];
+      try {
+        const r = await apiGet({ action: 'results' });
+        if (r && r.ok && Array.isArray(r.breakdown)) breakdown = r.breakdown;
+      } catch (e) { /* fall through */ }
+      if (!breakdown.length) {
+        toast('No results to export.', 'info', 2000);
+        return;
+      }
+      const header = ['Rank', 'Contestant ID', 'Contestant Name', 'Total Score', 'Judges Count', 'Average'];
+      const lines = [header.join(',')];
+      breakdown.forEach(b => {
+        const nm = '"' + String(b.name).replace(/"/g, '""') + '"';
+        lines.push([b.rank, b.contestantId, nm, b.total, b.count, (b.average === null ? '' : b.average)].join(','));
+      });
+      downloadBlob(lines.join('\n'), 'results.csv', 'text/csv');
+      toast('Results CSV downloaded (' + breakdown.length + ' rows).', 'success', 2400);
     }
 
     // ============================================================
@@ -2210,9 +2581,10 @@
       if (hasUnsavedChanges()) {
         if (!confirm('You have unsaved score changes. Log out anyway?')) return;
       }
-      // Cancel any pending auto-save timers
+      // Cancel any pending auto-save timers and periodic polls
       Object.values(state.autoSaveTimers).forEach(t => clearTimeout(t));
       state.autoSaveTimers = {};
+      stopAutoRefresh();
       clearCreds();
       state.judgeId = null;
       state.password = null;
@@ -2225,12 +2597,20 @@
       state.undoStack = [];
       state.collapsedCards = {};
       state.orgLoaded = false;
+      state.compareMode = false;
+      state.comparisonData = {};
+      state.lastSync = 0;
+      clearComparisonBadges();
+      // Reset compare toggle UI
+      const cmpBtn = $('#compareToggle');
+      if (cmpBtn) { cmpBtn.classList.remove('active'); cmpBtn.disabled = true; cmpBtn.style.opacity = '.5'; }
       // Reset to judge tab and clear URL hash
       switchTab('judge', false);
       $('#dashView').classList.add('hidden');
       $('#orgView').classList.add('hidden');
       $('#authView').classList.remove('hidden');
       $('#tabbar').style.display = 'none';
+      $('#syncIndicator').style.display = 'none';
       $('#loginForm').reset();
     }
 
@@ -2258,11 +2638,18 @@
     async function loadOrganizerView() {
       const body = $('#orgBody');
       const summary = $('#orgSummary');
+      const exportBtn = $('#orgExportCsvBtn');
       body.innerHTML = '<div class="org-empty"><div class="big">⏳</div><div>Loading results…</div></div>';
       summary.innerHTML = '';
       try {
         const r = await apiGet({ action: 'results' });
         state.orgLoaded = true;
+        // Enable the export button only when results are actually visible
+        if (exportBtn) {
+          const canExport = r.ok && state.showLiveResults;
+          exportBtn.disabled = !canExport;
+          exportBtn.style.opacity = canExport ? '' : '.5';
+        }
         if (!r.ok) {
           if (r.hidden) {
             body.innerHTML = '<div class="org-empty"><div class="big">🔒</div><div>' + escapeHtml(r.error || 'Results are hidden until voting closes.') + '</div></div>';
@@ -2426,6 +2813,7 @@
       const k = e.key.toLowerCase();
       if (k === 't') { e.preventDefault(); toggleTheme(); return; }
       if (k === 'u') { e.preventDefault(); $('#unscoredOnly').click(); return; }
+      if (k === 'c' && state.judgeId) { e.preventDefault(); $('#compareToggle').click(); return; }
       if (k === 'r') { e.preventDefault(); if (!$('#refreshBtn').disabled) $('#refreshBtn').click(); return; }
       if (k === 'j' && state.judgeId) { e.preventDefault(); switchTab('judge', true); return; }
       if (k === 'o' && state.judgeId) { e.preventDefault(); switchTab('organizer', true); return; }
@@ -2459,11 +2847,22 @@
       $('#saveAllBtn').addEventListener('click', saveAllPending);
       $('#themeBtn').addEventListener('click', toggleTheme);
       $('#autoSaveToggle').addEventListener('click', toggleAutoSave);
+      $('#compareToggle').addEventListener('click', toggleCompare);
       $('#helpBtn').addEventListener('click', openShortcuts);
       $('#shortcutsClose').addEventListener('click', closeShortcuts);
       $('#shortcutsBtn').addEventListener('click', () => { closeExportMenu(); openShortcuts(); });
       $('#tabJudge').addEventListener('click', () => switchTab('judge', true));
       $('#tabOrganizer').addEventListener('click', () => switchTab('organizer', true));
+      // Density toggle
+      $$('#densityToggle [data-density]').forEach(btn => {
+        btn.addEventListener('click', () => toggleDensity(btn.getAttribute('data-density')));
+      });
+      // Organizer view buttons
+      $('#orgRefreshBtn').addEventListener('click', () => {
+        state.orgLoaded = false;
+        loadOrganizerView();
+      });
+      $('#orgExportCsvBtn').addEventListener('click', exportResultsCSV);
       window.addEventListener('hashchange', () => {
         if (!state.judgeId) return;
         const onOrg = location.hash === '#organizer';

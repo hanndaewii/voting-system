@@ -320,3 +320,53 @@ Stage Summary:
 
 Recommended next phase:
 - Optional: per-contestant comparison mode (show judge's score next to group average when SHOW_LIVE_RESULTS=true), CSV batch upload for organizers, real-time poll (auto-refresh status every N seconds), judge notes/comments (would need backend column addition — breaks spec's 4-column Votes sheet, so skip), export results to CSV/PDF for organizers.
+
+---
+Task ID: 40 (webDevReview round 4)
+Agent: webDevReview
+Task: QA baseline + new features (auto-refresh, connection dot, compare mode, export results CSV, density toggle) + styling.
+
+Work Log:
+- Read worklog; project stable at 46/46 tests from round 3.
+- QA baseline: 46/46 tests passed, browser smoke clean.
+
+NEW FRONTEND FEATURES (index.html, 2541→~2940 lines):
+- Real-time auto-refresh: polls status + myVotes every 30s. Detects voting-open flip → toast ("Voting is now OPEN/CLOSED"). Detects contestant count change → re-fetches + re-renders. Detects judge-name change → updates header. Skips myVotes poll when there are unsaved input changes (to avoid clobbering). Refreshes comparison data when compare mode is on.
+- Sync indicator in dashboard header: "Synced just now / Xs ago / Xm ago" with a dot that turns into a spinner while polling. Updates every 5s.
+- Connection status dot in topbar: green when online, red+blink when offline. Uses navigator.onLine + online/offline events.
+- Compare mode (opt-in toggle, `c` shortcut): when SHOW_LIVE_RESULTS=true, fetches the results breakdown and shows a "📊 Group avg X" badge on each card next to the score input. Toggle is disabled (greyed) when results are hidden. Turning off removes all badges. Respects the spec's privacy: only aggregates, never per-judge.
+- Export results to CSV (organizer, Results tab): downloads the rankings table as results.csv with columns Rank, Contestant ID, Contestant Name, Total Score, Judges Count, Average. Button is disabled when SHOW_LIVE_RESULTS=false.
+- Card density toggle (Comfortable / Compact): compact mode reduces padding/gaps, hides hints + timestamps, smaller inputs/buttons. Persisted to localStorage (jv_density). Loaded on login.
+- Organizer view now has its own Refresh button (re-fetches results without full page reload).
+- Keyboard shortcut `c` toggles compare mode; shortcuts overlay updated.
+
+STYLING IMPROVEMENTS:
+- Connection dot with pulsing offline animation.
+- Sync indicator with spinner-during-poll state.
+- Compare badge: pill with info color, 📊 icon, tabular-nums.
+- Density toggle: segmented control with active state.
+- Organizer view: dash-title layout with refresh + CSV buttons.
+
+BROWSER E2E VERIFICATION (all passed):
+- Density toggle: comfortable→compact changes body class; persists after reload.
+- Sync indicator: visible immediately after login ("Synced just now ago"); updates to "Xs ago".
+- Connection dot: green/ONLINE when navigator.onLine.
+- Compare toggle: DISABLED when SHOW_LIVE_RESULTS=false; ENABLED when true.
+- Compare mode ON: 2 badges appear (C001 "Group avg 90" = (85+95)/2; C002 "Group avg 75" = (70+80)/2). Turning OFF removes all badges.
+- Export results CSV: downloads results.csv with correct rows (rank, id, name, total, count, average). Button disabled when SHOW_LIVE=false.
+- Voting-flip detection: simulated previous=closed, pollOnce fetched status=open, detected flip, toast "Voting is now OPEN — you can save scores.", pill re-updated.
+- Round-trip regression: save 88 → reload → C001=88, server confirms {"C001":88} with timestamp.
+- Sticky footer on login: gap=0.
+- No JS console errors throughout.
+
+BUGS FOUND AND FIXED:
+1. Sync indicator hidden for first 5s after login — FIXED by calling renderSyncIndicator() immediately in startAutoRefresh() instead of waiting for the first interval tick.
+2. Compare toggle stayed disabled even with SHOW_LIVE_RESULTS=true — FIXED by adding the enable/disable logic to loadStatusAndContestants() (initial load), not just pollOnce (periodic refresh). Previously the toggle only became enabled after the first 30s poll.
+
+Stage Summary:
+- 46/46 tests pass (unchanged — no backend changes this round).
+- All round-4 features verified in-browser with no regressions.
+- Both bugs fixed and verified.
+
+Recommended next phase:
+- Optional: per-contestant comparison mode (show judge's score vs group average inline), CSV batch upload for organizers to seed contestants/judges, judge session timeout warning, accessibility audit (ARIA roles, screen reader testing), PWA manifest for installability, offline support via service worker (cache the static shell).
