@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="JUDGED VOTE — a lightweight judging & voting system. Score contestants from any device; Google Sheets is the source of truth." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <title>JUDGED VOTE — Judging System</title>
   <style>
     /* =========================================================
@@ -467,7 +471,7 @@
     .card {
       background: var(--card);
       border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
+      box-shadow: var(--shadow-sm), inset 3px 0 0 var(--border);
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -480,10 +484,12 @@
       from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-    .card.saved { border-color: rgba(22,163,74,0.4); }
+    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow), inset 3px 0 0 var(--border-strong); }
+    .card.saved { border-color: rgba(22,163,74,0.4); box-shadow: var(--shadow-sm), inset 3px 0 0 var(--success); }
+    .card.saved:hover { box-shadow: var(--shadow), inset 3px 0 0 var(--success); }
     [data-theme="dark"] .card.saved { border-color: rgba(34,197,94,0.4); }
-    .card.error { border-color: rgba(220,38,38,0.5); }
+    .card.error { border-color: rgba(220,38,38,0.5); box-shadow: var(--shadow-sm), inset 3px 0 0 var(--error); }
+    .card.error:hover { box-shadow: var(--shadow), inset 3px 0 0 var(--error); }
     [data-theme="dark"] .card.error { border-color: rgba(239,68,68,0.5); }
     .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
     .contestant-name { font-weight: 800; font-size: 16px; line-height: 1.25; }
@@ -1147,6 +1153,220 @@
     .density-toggle button:hover:not(.active) { background: var(--card-soft); }
 
     /* =========================================================
+       Round 5 — Avatars (contestant + judge initials)
+       ========================================================= */
+    .card-id-wrap { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .avatar {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      flex: 0 0 auto;
+      user-select: none;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,0.28), transparent 55%),
+        linear-gradient(135deg, hsl(var(--h, 175) 55% 38%), hsl(var(--h, 175) 62% 52%));
+      box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--border);
+      transition: box-shadow .3s ease, transform .2s ease;
+    }
+    .avatar.scored {
+      box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--success);
+    }
+    .avatar.sm { width: 30px; height: 30px; font-size: 11px; box-shadow: 0 0 0 1.5px var(--card), 0 0 0 3px var(--border); }
+    .avatar.sm.scored { box-shadow: 0 0 0 1.5px var(--card), 0 0 0 3px var(--success); }
+    .card:hover .avatar { transform: scale(1.04); }
+    .judge-inline { display: inline-flex; align-items: center; gap: 8px; vertical-align: middle; }
+    .density-compact .avatar { width: 34px; height: 34px; font-size: 12px; }
+
+    /* =========================================================
+       Round 5 — Top picks (my leaderboard)
+       ========================================================= */
+    .top-picks {
+      margin-top: 12px;
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap;
+    }
+    .top-picks .tp-label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.6px;
+      text-transform: uppercase; color: var(--text-muted);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .tp-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 5px 12px 5px 7px;
+      border-radius: 999px;
+      font-size: 12px; font-weight: 700;
+      background: var(--card-soft);
+      border: 1px solid var(--border);
+      animation: cardIn .3s ease both;
+      max-width: 220px;
+    }
+    .tp-chip .medal { font-size: 15px; line-height: 1; }
+    .tp-chip .nm {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;
+    }
+    .tp-chip .sc {
+      font-variant-numeric: tabular-nums;
+      background: var(--primary-soft);
+      color: var(--primary-strong);
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-weight: 800;
+    }
+    [data-theme="dark"] .tp-chip .sc { color: var(--primary); }
+    .tp-chip.gold   { border-color: rgba(202,138,4,0.55); background: linear-gradient(90deg, var(--warning-soft), var(--card-soft)); }
+    .tp-chip.silver { border-color: var(--border-strong); }
+    .tp-chip.bronze { border-color: rgba(180,83,9,0.45); background: linear-gradient(90deg, var(--error-soft), var(--card-soft)); }
+
+    /* =========================================================
+       Round 5 — Session timeout warning modal
+       ========================================================= */
+    .timeout-card { text-align: center; max-width: 380px; }
+    .timeout-ring-wrap { position: relative; width: 76px; height: 76px; margin: 2px auto 14px; }
+    .timeout-ring { width: 76px; height: 76px; transform: rotate(-90deg); }
+    .timeout-ring circle { fill: none; stroke-width: 6; }
+    .timeout-ring .tr-bg { stroke: var(--border); }
+    .timeout-ring .tr-fg {
+      stroke: var(--warning);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke .4s;
+    }
+    .timeout-ring.urgent .tr-fg { stroke: var(--error); }
+    .timeout-num {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; font-weight: 800; color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .timeout-actions { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+    .timeout-actions .btn { min-width: 130px; }
+
+    /* =========================================================
+       Round 5 — Onboarding spotlight tour
+       ========================================================= */
+    .tour-layer {
+      position: fixed; inset: 0;
+      z-index: 80;
+      display: none;
+    }
+    .tour-layer.show { display: block; }
+    .tour-spot {
+      position: absolute;
+      border-radius: 14px;
+      box-shadow: 0 0 0 3px var(--primary), 0 0 0 9999px rgba(2, 6, 23, 0.62);
+      transition: all .32s cubic-bezier(.4,0,.2,1);
+      pointer-events: none;
+    }
+    .tour-spot.hidden-spot { box-shadow: none; }
+    .tour-tip {
+      position: absolute;
+      width: min(330px, calc(100vw - 32px));
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-strong);
+      padding: 18px 18px 16px;
+      transition: top .32s cubic-bezier(.4,0,.2,1), left .32s cubic-bezier(.4,0,.2,1);
+      animation: cardIn .25s ease both;
+    }
+    .tour-tip .tour-step-num {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--primary-strong);
+      margin-bottom: 6px;
+    }
+    [data-theme="dark"] .tour-tip .tour-step-num { color: var(--primary); }
+    .tour-tip h3 { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
+    .tour-tip .tour-body { font-size: 13px; color: var(--text-muted); line-height: 1.55; }
+    .tour-tip .tour-body b { color: var(--text); }
+    .tour-tip kbd {
+      display: inline-block; padding: 0 6px; min-width: 20px; text-align: center;
+      background: var(--card-soft); border: 1px solid var(--border-strong);
+      border-bottom-width: 2px; border-radius: 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px; font-weight: 700;
+    }
+    .tour-progress-dots { display: flex; gap: 6px; margin: 14px 0 0; }
+    .tour-progress-dots span {
+      width: 7px; height: 7px; border-radius: 999px;
+      background: var(--border-strong);
+      transition: all .2s;
+    }
+    .tour-progress-dots span.on {
+      background: var(--primary);
+      width: 20px;
+    }
+    .tour-actions { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+    .tour-actions .spacer { flex: 1; }
+    .tour-actions .btn { height: 36px; min-height: 36px; font-size: 12.5px; padding: 0 14px; }
+
+    /* =========================================================
+       Round 5 — Login password visibility toggle
+       ========================================================= */
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 46px; }
+    .pw-toggle {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      width: 34px; height: 34px;
+      border: none; background: transparent;
+      color: var(--text-muted);
+      cursor: pointer; border-radius: var(--radius-xs);
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: color .15s, background .15s;
+    }
+    .pw-toggle:hover { color: var(--text); background: var(--card-soft); }
+    .pw-toggle svg { width: 17px; height: 17px; }
+    .pw-toggle .off-ic { display: none; }
+    .pw-toggle.shown .on-ic { display: none; }
+    .pw-toggle.shown .off-ic { display: block; }
+
+    /* =========================================================
+       Round 5 — Themed scrollbars, brand gradient, misc polish
+       ========================================================= */
+    * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 999px;
+      border: 2.5px solid transparent;
+      background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover { background-color: var(--text-muted); background-clip: content-box; }
+    .brand-text {
+      background: linear-gradient(92deg, #5eead4 0%, #2dd4bf 45%, #fbbf24 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+    .stat-tile { position: relative; transition: transform .15s ease, border-color .15s ease; }
+    .stat-tile:hover { transform: translateY(-1.5px); border-color: var(--border-strong); }
+    .stat-tile .v.pop { animation: statPop .35s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes statPop { 0% { transform: scale(1); } 45% { transform: scale(1.22); } 100% { transform: scale(1); } }
+    .stat-tile .glyph {
+      position: absolute; top: 7px; right: 8px;
+      font-size: 11px; opacity: .5;
+      line-height: 1;
+    }
+    .empty .btn { margin-top: 12px; }
+
+    /* =========================================================
+       Round 5 — Reduced motion
+       ========================================================= */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+      .progress-fill::after { animation: none !important; }
+      .card:hover { transform: none; }
+    }
+
+    /* =========================================================
        Print stylesheet — clean export view
        ========================================================= */
     @media print {
@@ -1154,7 +1374,8 @@
       header.topbar, footer.site, .toolbar, .toast-stack,
       .celebrate, .overlay, .dash-actions, .stats-strip,
       #saveAllBtn, #refreshBtn, #logoutBtn, .chips, .stepper,
-      .card [data-save], .card [data-step], .card .hint {
+      .card [data-save], .card [data-step], .card .hint,
+      .tour-layer, #timeoutOverlay, .judge-inline .avatar {
         display: none !important;
       }
       .app { padding: 0; min-height: auto; }
@@ -1191,7 +1412,7 @@
       <div class="topbar-inner">
         <div class="brand">
           <span class="brand-dot"></span>
-          <span>JUDGED VOTE</span>
+          <span class="brand-text">JUDGED VOTE</span>
         </div>
         <div class="topbar-meta">
           <span class="conn-dot" id="connDot" title="Online" aria-label="Connection status: online"></span>
@@ -1236,7 +1457,13 @@
 
             <div class="field">
               <label for="password">Password</label>
-              <input type="password" id="password" name="password" placeholder="Shared password" autocomplete="current-password" required />
+              <div class="pw-wrap">
+                <input type="password" id="password" name="password" placeholder="Shared password" autocomplete="current-password" required />
+                <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password" aria-pressed="false" title="Show / hide password">
+                  <svg class="on-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="off-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
             </div>
 
             <button type="submit" class="btn block primary-strong" id="loginBtn">
@@ -1257,7 +1484,7 @@
       <section id="dashView" class="hidden">
         <div class="dash-head">
           <div class="dash-title">
-            <h2>Your Judging <span class="judge-name" id="judgeNameLabel"></span></h2>
+            <h2>Your Judging <span class="judge-inline"><span class="avatar sm" id="judgeAvatar" style="--h:174" aria-hidden="true"></span><span class="judge-name" id="judgeNameLabel"></span></span></h2>
             <div class="dash-actions">
               <span class="sync-indicator" id="syncIndicator" style="display:none;">
                 <span class="dot"></span>
@@ -1275,10 +1502,14 @@
             <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
           </div>
           <div class="stats-strip" id="statsStrip">
-            <div class="stat-tile avg"><div class="v" id="statAvg">—</div><div class="l">Average</div></div>
-            <div class="stat-tile hi"><div class="v" id="statHi">—</div><div class="l">Highest</div></div>
-            <div class="stat-tile lo"><div class="v" id="statLo">—</div><div class="l">Lowest</div></div>
-            <div class="stat-tile rem"><div class="v" id="statRem">—</div><div class="l">Remaining</div></div>
+            <div class="stat-tile avg"><span class="glyph">Σ</span><div class="v" id="statAvg">—</div><div class="l">Average</div></div>
+            <div class="stat-tile hi"><span class="glyph">▲</span><div class="v" id="statHi">—</div><div class="l">Highest</div></div>
+            <div class="stat-tile lo"><span class="glyph">▼</span><div class="v" id="statLo">—</div><div class="l">Lowest</div></div>
+            <div class="stat-tile rem"><span class="glyph">◷</span><div class="v" id="statRem">—</div><div class="l">Remaining</div></div>
+          </div>
+          <div class="top-picks" id="topPicks" style="display:none;">
+            <div class="tp-label">🏅 Top picks</div>
+            <div class="tp-chips" id="topPicksChips"></div>
           </div>
           <div class="judges-progress" id="judgesProgress" style="display:none;">
             <span class="ic">👥</span>
@@ -1339,6 +1570,10 @@
                 Download JSON
               </button>
               <div class="dd-sep"></div>
+              <button type="button" id="tourReplayBtn" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                Restart guided tour
+              </button>
               <button type="button" id="shortcutsBtn" role="menuitem">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg>
                 Keyboard shortcuts
@@ -1423,6 +1658,46 @@
   </div>
 
   <!-- =========================================================
+       Session timeout warning (round 5)
+       ========================================================= -->
+  <div class="overlay" id="timeoutOverlay" role="dialog" aria-modal="true" aria-labelledby="timeoutTitle">
+    <div class="overlay-card timeout-card">
+      <div class="timeout-ring-wrap">
+        <svg class="timeout-ring" id="timeoutRingSvg" viewBox="0 0 76 76" aria-hidden="true">
+          <circle class="tr-bg" cx="38" cy="38" r="32"></circle>
+          <circle class="tr-fg" id="timeoutRing" cx="38" cy="38" r="32"></circle>
+        </svg>
+        <div class="timeout-num" id="timeoutNum">60</div>
+      </div>
+      <h3 id="timeoutTitle">Still there?</h3>
+      <div class="sub">You've been inactive for a while. For security, you'll be signed out automatically when the countdown ends. Unsaved score changes would be lost.</div>
+      <div class="timeout-actions">
+        <button class="btn primary-strong" id="timeoutStayBtn" type="button">Stay signed in</button>
+        <button class="btn ghost" id="timeoutLogoutBtn" type="button">Log out now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       Onboarding spotlight tour (round 5)
+       ========================================================= -->
+  <div class="tour-layer" id="tourLayer" aria-hidden="true">
+    <div class="tour-spot" id="tourSpot"></div>
+    <div class="tour-tip" id="tourTip" role="dialog" aria-modal="true" aria-labelledby="tourTipTitle">
+      <div class="tour-step-num" id="tourStepNum">1 / 6</div>
+      <h3 id="tourTipTitle"></h3>
+      <div class="tour-body" id="tourBody"></div>
+      <div class="tour-progress-dots" id="tourDots"></div>
+      <div class="tour-actions">
+        <button class="btn ghost" id="tourSkipBtn" type="button">Skip tour</button>
+        <span class="spacer"></span>
+        <button class="btn subtle" id="tourBackBtn" type="button">Back</button>
+        <button class="btn primary-strong" id="tourNextBtn" type="button">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
        Keyboard shortcuts overlay
        ========================================================= -->
   <div class="overlay" id="shortcutsOverlay" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
@@ -1437,6 +1712,7 @@
         <div class="shortcut-row"><span class="desc">Fill preset 1–5 on focused card</span><span class="keys"><span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span><span class="kbd">4</span><span class="kbd">5</span></span></div>
         <div class="shortcut-row"><span class="desc">Save focused card</span><span class="keys"><span class="kbd">S</span></span></div>
         <div class="shortcut-row"><span class="desc">Toggle dark mode</span><span class="keys"><span class="kbd">T</span></span></div>
+        <div class="shortcut-row"><span class="desc">Toggle compact density</span><span class="keys"><span class="kbd">D</span></span></div>
         <div class="shortcut-row"><span class="desc">Toggle unscored-only filter</span><span class="keys"><span class="kbd">U</span></span></div>
         <div class="shortcut-row"><span class="desc">Toggle compare mode (group averages)</span><span class="keys"><span class="kbd">C</span></span></div>
         <div class="shortcut-row"><span class="desc">Switch to Judging tab</span><span class="keys"><span class="kbd">J</span></span></div>
@@ -1463,6 +1739,7 @@
 
     const SS_KEY = 'jv_creds';
     const THEME_KEY = 'jv_theme';
+    const TOUR_KEY = 'jv_tour_done';
     const RETRYABLE_HINTS = [
       'Server busy', 'Server error', 'Failed to fetch',
       'NetworkError', 'Network request failed', 'Load failed',
@@ -1523,6 +1800,89 @@
     }
     function cssEscape(s) {
       return String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+    }
+
+    // ============================================================
+    // Round 5 helpers — avatars, top picks, animated numbers
+    // ============================================================
+    /** First letter of up to the first two words: "Juan Dela Cruz" → "JD" */
+    function initialsOf(name) {
+      const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return '?';
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    /** Deterministic hue (0–359) from any string — same ID always gets the same color. */
+    function hueFromString(s) {
+      let h = 0;
+      const str = String(s || '');
+      for (let i = 0; i < str.length; i++) {
+        h = (h * 31 + str.charCodeAt(i)) >>> 0;
+      }
+      // Murmur-style avalanche so consecutive IDs (C001, C002…) spread widely.
+      h = (h ^ (h >>> 16)) >>> 0;
+      h = Math.imul(h, 2246822507) >>> 0;
+      h = (h ^ (h >>> 13)) >>> 0;
+      h = Math.imul(h, 3266489909) >>> 0;
+      h = (h ^ (h >>> 16)) >>> 0;
+      return h % 360;
+    }
+    /** Update the judge avatar + name chip in the dashboard header. */
+    function setJudgeIdentity() {
+      const label = $('#judgeNameLabel');
+      if (label) label.textContent = state.judgeName ? '· ' + state.judgeName : '';
+      const av = $('#judgeAvatar');
+      if (av) {
+        av.textContent = state.judgeName ? initialsOf(state.judgeName) : '';
+        av.style.setProperty('--h', String(hueFromString(state.judgeName || 'judge')));
+        av.classList.toggle('scored', !!state.judgeName && state.stats.complete === true);
+      }
+    }
+    /** Animate a number change in a stat tile (count-up). Skips when reduced-motion. */
+    function animateNum(el, target, decimals) {
+      if (!el) return;
+      if (target === null || target === undefined || target === '') { el.textContent = '—'; return; }
+      const to = Number(target);
+      if (!isFinite(to)) { el.textContent = String(target); return; }
+      const fromRaw = parseFloat(el.textContent);
+      const from = isFinite(fromRaw) ? fromRaw : 0;
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const fmt = (v) => decimals ? v.toFixed(decimals) : String(Math.round(v));
+      if (reduce || to === from || Math.abs(to - from) < 0.01) { el.textContent = fmt(to); return; }
+      const dur = 450;
+      const t0 = performance.now();
+      function tick(t) {
+        const p = Math.min(1, (t - t0) / dur);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmt(from + (to - from) * eased);
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+      if (el.classList) {
+        el.classList.remove('pop');
+        void el.offsetWidth; // restart animation
+        el.classList.add('pop');
+      }
+    }
+    /** Render the "Top picks" chips — the judge's own highest scores. */
+    function renderTopPicks() {
+      const wrap = $('#topPicks');
+      const holder = $('#topPicksChips');
+      if (!wrap || !holder) return;
+      const scored = state.contestants
+        .filter(c => state.votes[c.id] !== undefined && state.votes[c.id] !== null)
+        .map(c => ({ name: c.name, score: Number(state.votes[c.id]) }))
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+        .slice(0, 3);
+      if (scored.length < 2) { wrap.style.display = 'none'; holder.innerHTML = ''; return; }
+      wrap.style.display = 'flex';
+      const medals = ['🥇', '🥈', '🥉'];
+      const cls = ['gold', 'silver', 'bronze'];
+      holder.innerHTML = scored.map((s, i) =>
+        '<span class="tp-chip ' + cls[i] + '"><span class="medal">' + medals[i] + '</span>' +
+        '<span class="nm">' + escapeHtml(s.name) + '</span>' +
+        '<span class="sc">' + escapeHtml(String(s.score)) + '</span></span>'
+      ).join('');
     }
 
     // ============================================================
@@ -1795,6 +2155,8 @@
       updateProgress();
       refreshStats();
       startAutoRefresh();
+      startIdleWatch();
+      maybeStartTour();
     }
 
     async function loadStatusAndContestants() {
@@ -1922,7 +2284,7 @@
             state.votes = r.votes || {};
             state.timestamps = r.timestamps || {};
             if (prevName !== state.judgeName) {
-              $('#judgeNameLabel').textContent = state.judgeName ? '· ' + state.judgeName : '';
+              setJudgeIdentity();
             }
             if (prevVotes !== JSON.stringify(state.votes)) {
               renderContestants();
@@ -2137,7 +2499,20 @@
 
       const list = getVisibleList();
       if (!list.length) {
-        grid.innerHTML = '<div class="empty" style="grid-column:1/-1;"><div class="big">🔍</div><div>No contestants match your filters.</div></div>';
+        const hasFilters = !!(state.search.trim() || state.unscoredOnly);
+        grid.innerHTML = '<div class="empty" style="grid-column:1/-1;"><div class="big">🔍</div><div>' +
+          (hasFilters ? 'No contestants match your filters.' : 'No active contestants yet. The organizer can add them in the Google Sheet.') +
+          '</div>' +
+          (hasFilters ? '<button class="btn subtle" id="clearFiltersBtn" type="button">Clear search &amp; filters</button>' : '') +
+          '</div>';
+        const clearBtn = $('#clearFiltersBtn');
+        if (clearBtn) clearBtn.addEventListener('click', () => {
+          state.search = '';
+          state.unscoredOnly = false;
+          $('#searchInput').value = '';
+          $('#unscoredOnly').classList.remove('active');
+          renderContestants();
+        });
         return;
       }
 
@@ -2155,6 +2530,9 @@
         const collapsed = hasSaved && state.collapsedCards[c.id] ? ' collapsed' : '';
         const cardCls = (hasSaved ? 'card saved' : 'card') + collapsed;
         const hc = heatClass(inputVal);
+        const initials = initialsOf(c.name);
+        const hue = hueFromString(c.id);
+        const avatarCls = 'avatar' + (hasSaved ? ' scored' : '');
         const chipsHtml = presets.map(p =>
           '<button class="chip" type="button" data-preset="' + p + '" ' + disabled + '>' + p + '</button>'
         ).join('');
@@ -2164,10 +2542,13 @@
         return `
           <div class="${cardCls}" data-cid="${escapeHtml(c.id)}" style="animation-delay:${Math.min(idx * 30, 300)}ms">
             <div class="card-head">
-              <div>
-                <div class="contestant-name">${escapeHtml(c.name)}</div>
-                <div class="contestant-id">${escapeHtml(c.id)}</div>
-                ${hasSaved && state.timestamps[c.id] ? '<div class="card-timestamp" data-ts>Updated ' + escapeHtml(relativeTime(state.timestamps[c.id])) + '</div>' : ''}
+              <div class="card-id-wrap">
+                <span class="${avatarCls}" style="--h:${hue}" data-avatar aria-hidden="true">${escapeHtml(initials)}</span>
+                <div style="min-width:0;">
+                  <div class="contestant-name">${escapeHtml(c.name)}</div>
+                  <div class="contestant-id">${escapeHtml(c.id)}</div>
+                  ${hasSaved && state.timestamps[c.id] ? '<div class="card-timestamp" data-ts>Updated ' + escapeHtml(relativeTime(state.timestamps[c.id])) + '</div>' : ''}
+                </div>
               </div>
               <div style="display:flex; align-items:flex-start; gap:6px;">
                 ${hasSaved ? '<span class="collapse-summary">' + escapeHtml(String(savedScore)) + '</span>' : ''}
@@ -2372,6 +2753,9 @@
           const sum = card.querySelector('.collapse-summary');
           if (sum) sum.textContent = String(state.votes[cid]);
         }
+        // Avatar ring turns green once the contestant is scored
+        const av = card.querySelector('[data-avatar]');
+        if (av) av.classList.add('scored');
         // Push undo entry (only meaningful for updates — inserting has no previous value to revert to)
         if (!isNew && prevScore !== null && prevScore !== state.votes[cid]) {
           state.undoStack.unshift({ cid, prevScore: prevScore, newScore: state.votes[cid] });
@@ -2471,10 +2855,12 @@
             highest: r.highest, lowest: r.lowest,
             complete: r.complete, progressPct: r.progressPct
           };
-          $('#statAvg').textContent = r.average === null ? '—' : r.average;
-          $('#statHi').textContent = r.highest === null ? '—' : r.highest;
-          $('#statLo').textContent = r.lowest === null ? '—' : r.lowest;
-          $('#statRem').textContent = r.remaining;
+          animateNum($('#statAvg'), r.average, 1);
+          animateNum($('#statHi'), r.highest, 0);
+          animateNum($('#statLo'), r.lowest, 0);
+          animateNum($('#statRem'), r.remaining, 0);
+          renderTopPicks();
+          setJudgeIdentity();
           renderDistChart();
         }
       } catch (e) { /* silent — stats are non-critical */ }
@@ -2556,7 +2942,7 @@
           state.judgeName = r.judgeName || state.judgeName;
           state.votes = r.votes || {};
           state.timestamps = r.timestamps || {};
-          $('#judgeNameLabel').textContent = state.judgeName ? '· ' + state.judgeName : '';
+          setJudgeIdentity();
           state.uiScores = {};
           await loadStatusAndContestants();
           renderContestants();
@@ -2581,10 +2967,21 @@
       if (hasUnsavedChanges()) {
         if (!confirm('You have unsaved score changes. Log out anyway?')) return;
       }
+      performLogout();
+    }
+
+    /**
+     * Actual logout teardown (no confirm dialogs). Used by the manual logout
+     * button, the session-timeout auto-logout, and the timeout "Log out now"
+     * button.
+     */
+    function performLogout(reason) {
       // Cancel any pending auto-save timers and periodic polls
       Object.values(state.autoSaveTimers).forEach(t => clearTimeout(t));
       state.autoSaveTimers = {};
       stopAutoRefresh();
+      stopIdleWatch();
+      endTour(true); // silently tear down the tour if it is running
       clearCreds();
       state.judgeId = null;
       state.password = null;
@@ -2601,6 +2998,7 @@
       state.comparisonData = {};
       state.lastSync = 0;
       clearComparisonBadges();
+      renderTopPicks(); // hides the top-picks strip
       // Reset compare toggle UI
       const cmpBtn = $('#compareToggle');
       if (cmpBtn) { cmpBtn.classList.remove('active'); cmpBtn.disabled = true; cmpBtn.style.opacity = '.5'; }
@@ -2612,6 +3010,13 @@
       $('#tabbar').style.display = 'none';
       $('#syncIndicator').style.display = 'none';
       $('#loginForm').reset();
+      const pwBtn = $('#pwToggle');
+      if (pwBtn) { pwBtn.classList.remove('shown'); pwBtn.setAttribute('aria-pressed', 'false'); }
+      const pwInput = $('#password');
+      if (pwInput) pwInput.type = 'password';
+      if (reason === 'timeout') {
+        toast('Signed out automatically after inactivity.', 'info', 4200);
+      }
     }
 
     // ============================================================
@@ -2792,6 +3197,7 @@
 
       // ? toggles shortcuts overlay (always)
       if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        if (tourActive) return;
         e.preventDefault();
         if ($('#shortcutsOverlay').classList.contains('show')) closeShortcuts();
         else openShortcuts();
@@ -2799,11 +3205,19 @@
       }
       // Esc closes overlay / clears search
       if (e.key === 'Escape') {
+        if (tourActive) { endTour(false); return; }
+        if ($('#timeoutOverlay').classList.contains('show')) { hideIdleWarning(); resetIdle(); return; }
         if ($('#shortcutsOverlay').classList.contains('show')) { closeShortcuts(); return; }
         if ($('#exportMenu').classList.contains('show')) { $('#exportMenu').classList.remove('show'); return; }
         if (state.search) { state.search = ''; $('#searchInput').value = ''; renderContestants(); return; }
         if (state.unscoredOnly) { state.unscoredOnly = false; $('#unscoredOnly').classList.remove('active'); renderContestants(); return; }
         return;
+      }
+      // Tour keyboard navigation: Enter / arrows
+      if (tourActive) {
+        if (e.key === 'Enter' || e.key === 'ArrowRight') { e.preventDefault(); $('#tourNextBtn').click(); return; }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); $('#tourBackBtn').click(); return; }
+        return; // block other shortcuts while the tour is showing
       }
       if (inField) return;
       if ($('#shortcutsOverlay').classList.contains('show')) return;
@@ -2813,6 +3227,12 @@
       const k = e.key.toLowerCase();
       if (k === 't') { e.preventDefault(); toggleTheme(); return; }
       if (k === 'u') { e.preventDefault(); $('#unscoredOnly').click(); return; }
+      if (k === 'd' && state.judgeId) {
+        e.preventDefault();
+        const next = state.density === 'compact' ? 'comfortable' : 'compact';
+        toggleDensity(next);
+        return;
+      }
       if (k === 'c' && state.judgeId) { e.preventDefault(); $('#compareToggle').click(); return; }
       if (k === 'r') { e.preventDefault(); if (!$('#refreshBtn').disabled) $('#refreshBtn').click(); return; }
       if (k === 'j' && state.judgeId) { e.preventDefault(); switchTab('judge', true); return; }
@@ -2838,6 +3258,234 @@
     }
 
     // ============================================================
+    // Session timeout — warn after inactivity, auto sign-out (round 5)
+    // ============================================================
+    let IDLE_TIMEOUT_MS = 20 * 60 * 1000;   // inactivity before the warning appears
+    let IDLE_WARN_SECONDS = 60;             // countdown inside the warning
+    let idleTimer = null;                   // fires the warning
+    let idleCountdownTimer = null;          // ticks the countdown
+    let idleLastReset = 0;                  // throttles mousemove-driven resets
+    let idleWatchBound = false;
+
+    /** Test hook + future configurability. */
+    window.__setIdleTimers = function (timeoutMs, warnSeconds) {
+      if (timeoutMs) IDLE_TIMEOUT_MS = timeoutMs;
+      if (warnSeconds) IDLE_WARN_SECONDS = warnSeconds;
+    };
+
+    function resetIdle() {
+      if (!state.judgeId) return;
+      idleLastReset = Date.now();
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(showIdleWarning, IDLE_TIMEOUT_MS);
+    }
+
+    function startIdleWatch() {
+      if (!idleWatchBound) {
+        idleWatchBound = true;
+        const onActivity = () => {
+          // Throttle: mousemove fires constantly; only reset every 15s.
+          if (Date.now() - idleLastReset < 15000) return;
+          if ($('#timeoutOverlay').classList.contains('show')) return; // don't reset while warning shown
+          resetIdle();
+        };
+        document.addEventListener('click', onActivity, { passive: true });
+        document.addEventListener('keydown', onActivity, { passive: true });
+        document.addEventListener('mousemove', onActivity, { passive: true });
+        document.addEventListener('touchstart', onActivity, { passive: true });
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) resetIdle();
+        });
+      }
+      resetIdle();
+    }
+
+    function stopIdleWatch() {
+      if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+      if (idleCountdownTimer) { clearInterval(idleCountdownTimer); idleCountdownTimer = null; }
+      hideIdleWarning();
+    }
+
+    function showIdleWarning() {
+      if (!state.judgeId) return;
+      const overlay = $('#timeoutOverlay');
+      if (overlay.classList.contains('show')) return;
+      overlay.classList.add('show');
+      const ring = $('#timeoutRing');
+      const R = 32;
+      const CIRC = 2 * Math.PI * R;
+      ring.setAttribute('stroke-dasharray', String(CIRC));
+      ring.setAttribute('stroke-dashoffset', '0');
+      let remaining = IDLE_WARN_SECONDS;
+      const numEl = $('#timeoutNum');
+      const svgEl = $('#timeoutRingSvg');
+      numEl.textContent = String(remaining);
+      idleCountdownTimer = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(idleCountdownTimer);
+          idleCountdownTimer = null;
+          hideIdleWarning();
+          performLogout('timeout');
+          return;
+        }
+        numEl.textContent = String(remaining);
+        const frac = remaining / IDLE_WARN_SECONDS;
+        ring.setAttribute('stroke-dashoffset', String(CIRC * (1 - frac)));
+        svgEl.classList.toggle('urgent', remaining <= 10);
+      }, 1000);
+      $('#timeoutStayBtn').focus();
+    }
+
+    function hideIdleWarning() {
+      const overlay = $('#timeoutOverlay');
+      overlay.classList.remove('show');
+      const svgEl = $('#timeoutRingSvg');
+      if (svgEl) svgEl.classList.remove('urgent');
+      if (idleCountdownTimer) { clearInterval(idleCountdownTimer); idleCountdownTimer = null; }
+    }
+
+    // ============================================================
+    // Onboarding spotlight tour (round 5)
+    // ============================================================
+    let tourStepIdx = 0;
+    let tourActive = false;
+
+    function tourSteps() {
+      return [
+        {
+          target: null,
+          title: 'Welcome to JUDGED VOTE!',
+          body: 'This 30-second tour shows you how to score contestants quickly. ' +
+                'Your scores save straight to Google Sheets — the source of truth.'
+        },
+        {
+          target: '.progress-wrap',
+          title: 'Track your progress',
+          body: 'The <b>progress bar</b> and <b>stats strip</b> show how many contestants you\'ve scored, ' +
+                'your average / highest / lowest, and your <b>top picks</b> leaderboard.'
+        },
+        {
+          target: '#statsStrip',
+          title: 'Live statistics',
+          body: 'Stats update every time you save. The mini-chart shows how your scores spread across the range.'
+        },
+        {
+          target: '.toolbar',
+          title: 'Find & filter',
+          body: '<b>Search</b> by name or ID, <b>sort</b> (unscored first, by name, or by score), ' +
+                'show <b>unscored only</b>, switch card <b>density</b>, or <b>Save all pending</b> at once. ' +
+                'Press <kbd>/</kbd> to jump to search.'
+        },
+        {
+          target: '.card',
+          title: 'Score a contestant',
+          body: 'Type a score or tap a <b>preset chip</b> — the input tints red / amber / green as you go ' +
+                '(heat map). Press <kbd>Enter</kbd> to save. Scored cards can be <b>collapsed</b> to keep the list tidy.'
+        },
+        {
+          target: '#tabbar',
+          title: 'Two views',
+          body: '<b>Judging</b> is your scoring dashboard. <b>Results</b> shows aggregate standings ' +
+                '(only when the organizer enables live results). Switch with <kbd>J</kbd> / <kbd>O</kbd>. ' +
+                'Press <kbd>?</kbd> anytime for all shortcuts.'
+        }
+      ];
+    }
+
+    function maybeStartTour() {
+      let done = false;
+      try { done = localStorage.getItem(TOUR_KEY) === '1'; } catch (e) {}
+      if (done) return;
+      // Only auto-run on the judge tab with contestants to score.
+      if (location.hash === '#organizer') return;
+      if (!state.contestants.length) return;
+      setTimeout(() => { startTour(); }, 650);
+    }
+
+    function startTour() {
+      if (tourActive || !state.judgeId) return;
+      tourActive = true;
+      tourStepIdx = 0;
+      // Tour targets live on the judge tab — make sure it's visible.
+      if ($('#dashView').classList.contains('hidden')) switchTab('judge', false);
+      $('#tourLayer').classList.add('show');
+      $('#tourLayer').setAttribute('aria-hidden', 'false');
+      window.addEventListener('resize', positionTourStep);
+      window.addEventListener('scroll', positionTourStep, true);
+      renderTourStep();
+    }
+
+    function endTour(silent) {
+      if (!tourActive) return;
+      tourActive = false;
+      $('#tourLayer').classList.remove('show');
+      $('#tourLayer').setAttribute('aria-hidden', 'true');
+      window.removeEventListener('resize', positionTourStep);
+      window.removeEventListener('scroll', positionTourStep, true);
+      try { localStorage.setItem(TOUR_KEY, '1'); } catch (e) {}
+      if (!silent) toast('Tour finished — press ? anytime for shortcuts.', 'info', 3200);
+    }
+
+    function renderTourStep() {
+      const steps = tourSteps();
+      const step = steps[tourStepIdx];
+      $('#tourStepNum').textContent = (tourStepIdx + 1) + ' / ' + steps.length;
+      $('#tourTipTitle').textContent = step.title;
+      $('#tourBody').innerHTML = step.body;
+      // Progress dots
+      $('#tourDots').innerHTML = steps.map((s, i) =>
+        '<span class="' + (i === tourStepIdx ? 'on' : '') + '"></span>'
+      ).join('');
+      // Buttons
+      $('#tourBackBtn').style.visibility = tourStepIdx === 0 ? 'hidden' : 'visible';
+      $('#tourNextBtn').textContent = tourStepIdx === steps.length - 1 ? 'Finish' : 'Next';
+      positionTourStep();
+      $('#tourNextBtn').focus();
+    }
+
+    function positionTourStep() {
+      if (!tourActive) return;
+      const steps = tourSteps();
+      const step = steps[tourStepIdx];
+      const spot = $('#tourSpot');
+      const tip = $('#tourTip');
+      const vw = window.innerWidth, vh = window.innerHeight;
+      let targetEl = step.target ? document.querySelector(step.target) : null;
+      // Fallback to centered spot if the target is missing (e.g. hidden element)
+      if (targetEl && !targetEl.offsetParent && targetEl.getBoundingClientRect().width === 0) targetEl = null;
+
+      if (!targetEl) {
+        // No target: center the tooltip, hide the spotlight cutout.
+        spot.classList.add('hidden-spot');
+        spot.style.left = '0px'; spot.style.top = '0px';
+        spot.style.width = '0px'; spot.style.height = '0px';
+        tip.style.left = Math.max(16, (vw - tip.offsetWidth) / 2) + 'px';
+        tip.style.top = Math.max(16, (vh - tip.offsetHeight) / 2) + 'px';
+        return;
+      }
+
+      const r = targetEl.getBoundingClientRect();
+      const pad = 6;
+      spot.classList.remove('hidden-spot');
+      spot.style.left = Math.max(4, r.left - pad) + 'px';
+      spot.style.top = Math.max(4, r.top - pad) + 'px';
+      spot.style.width = Math.min(r.width + pad * 2, vw - 8) + 'px';
+      spot.style.height = (r.height + pad * 2) + 'px';
+
+      // Tooltip: below the target if there's room, otherwise above.
+      const tipW = tip.offsetWidth, tipH = tip.offsetHeight;
+      let left = r.left + (r.width / 2) - (tipW / 2);
+      left = Math.min(Math.max(12, left), vw - tipW - 12);
+      let top;
+      if (r.bottom + tipH + 18 < vh) top = r.bottom + 14;
+      else if (r.top - tipH - 18 > 0) top = r.top - tipH - 14;
+      else top = Math.max(12, (vh - tipH) / 2);
+      tip.style.left = left + 'px';
+      tip.style.top = top + 'px';
+    }
+
+    // ============================================================
     // Boot
     // ============================================================
     function bindStaticEvents() {
@@ -2851,8 +3499,43 @@
       $('#helpBtn').addEventListener('click', openShortcuts);
       $('#shortcutsClose').addEventListener('click', closeShortcuts);
       $('#shortcutsBtn').addEventListener('click', () => { closeExportMenu(); openShortcuts(); });
+      $('#tourReplayBtn').addEventListener('click', () => { closeExportMenu(); startTour(); });
       $('#tabJudge').addEventListener('click', () => switchTab('judge', true));
       $('#tabOrganizer').addEventListener('click', () => switchTab('organizer', true));
+
+      // Login password visibility toggle (round 5)
+      $('#pwToggle').addEventListener('click', () => {
+        const input = $('#password');
+        const btn = $('#pwToggle');
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.classList.toggle('shown', show);
+        btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        input.focus();
+      });
+
+      // Session timeout dialog buttons (round 5)
+      $('#timeoutStayBtn').addEventListener('click', () => {
+        hideIdleWarning();
+        resetIdle();
+        toast('Session extended.', 'success', 1800);
+      });
+      $('#timeoutLogoutBtn').addEventListener('click', () => {
+        hideIdleWarning();
+        performLogout();
+      });
+
+      // Onboarding tour buttons (round 5)
+      $('#tourNextBtn').addEventListener('click', () => {
+        const steps = tourSteps();
+        if (tourStepIdx >= steps.length - 1) endTour(false);
+        else { tourStepIdx++; renderTourStep(); }
+      });
+      $('#tourBackBtn').addEventListener('click', () => {
+        if (tourStepIdx > 0) { tourStepIdx--; renderTourStep(); }
+      });
+      $('#tourSkipBtn').addEventListener('click', () => endTour(false));
       // Density toggle
       $$('#densityToggle [data-density]').forEach(btn => {
         btn.addEventListener('click', () => toggleDensity(btn.getAttribute('data-density')));
@@ -2934,7 +3617,25 @@
       loadTheme();
       bindStaticEvents();
       tryRestoreSession();
+      registerServiceWorker();
     });
+
+    // ============================================================
+    // PWA — service worker registration (round 5)
+    // Registers only on https (or localhost for testing). Silently
+    // ignores failures so hosts without sw.js don't show errors.
+    // ============================================================
+    function registerServiceWorker() {
+      try {
+        if (!('serviceWorker' in navigator)) return;
+        const https = location.protocol === 'https:';
+        const local = ['localhost', '127.0.0.1'].indexOf(location.hostname) !== -1;
+        if (!https && !local) return;
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(() => { /* optional enhancement */ });
+        });
+      } catch (e) { /* ignore */ }
+    }
   </script>
 </body>
 </html>

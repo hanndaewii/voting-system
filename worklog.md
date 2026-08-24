@@ -370,3 +370,62 @@ Stage Summary:
 
 Recommended next phase:
 - Optional: per-contestant comparison mode (show judge's score vs group average inline), CSV batch upload for organizers to seed contestants/judges, judge session timeout warning, accessibility audit (ARIA roles, screen reader testing), PWA manifest for installability, offline support via service worker (cache the static shell).
+
+---
+Task ID: 50 (webDevReview round 5)
+Agent: webDevReview
+Task: QA baseline + new features (avatars, top picks, session timeout, onboarding tour, PWA) + styling polish.
+
+Work Log:
+- Read worklog; project stable at 46/46 tests from round 4.
+- QA baseline: 46/46 tests passed. Browser smoke: login (JUDGE-01/sharedpw), round-trip save 85→90→reload persisted, session restore across reload, dark mode, organizer tab, sticky footer (footerBottom==viewport when scrolled to end), zero console errors. No bugs found — proceeded to new features.
+
+NEW FEATURES (all frontend; Code.gs untouched at 705 lines):
+1. Contestant avatars — colored initial circles in each card header. Deterministic hue per contestant ID (murmur-style avalanche hash), ring turns green when scored, scales down in compact density. Judge avatar chip (initials + hue from judge name) in the dashboard header, updated by setJudgeIdentity() at all 3 name-update sites (enterDashboard, handleRefresh, pollOnce).
+2. Top picks — 🥇🥈🥉 medal chips showing the judge's own top-3 highest scores, live-updating after each save (renderTopPicks called from refreshStats). Hidden until ≥2 scored.
+3. Session timeout — 20 min inactivity → warning modal with SVG countdown ring (turns red ≤10s), "Stay signed in" / "Log out now"; auto-logout on countdown end via performLogout('timeout'). Activity listeners (click/keydown/touchstart/visibilitychange + throttled mousemove). window.__setIdleTimers() test hook.
+4. Onboarding tour — 6-step spotlight tour (welcome → progress → stats → toolbar → score card → tabs/shortcuts) with box-shadow spotlight cutout, clamped tooltip positioning, progress dots, Back/Next/Skip, keyboard nav (Enter/←/→/Esc). Auto-starts once on first login (jv_tour_done localStorage flag); replay via Export → "Restart guided tour". Tour teardown on logout.
+5. PWA — manifest.webmanifest + sw.js + icon.svg/icon-maskable.svg (hand-drawn SVG ballot/checkmark/gavel mark). SW: network-first for navigation, cache-first for shell assets, NEVER touches API requests (POST, /api, ?action=, /exec). Registration guarded to https/localhost, silently ignores failures. Offline verified: app shell loads with network off, login screen shown since session-restore API correctly fails; online recovery re-login works.
+6. Password visibility toggle on login (eye icon, aria-pressed).
+7. Logout refactored: handleLogout (confirm guard) → performLogout(reason) reused by timeout auto-logout; resets pw toggle state.
+8. Keyboard shortcut `d` toggles density; shortcuts overlay updated.
+9. Clear-filters button in the empty search state (resets search + unscored filter).
+
+STYLING IMPROVEMENTS:
+- Card left-edge accent insets (border color by status: grey default, green saved, red error; survives hover).
+- Animated stat count-up (rAF, cubic ease-out) + statPop scale animation; Σ/▲/▼/◷ glyphs in stat tiles; skips under prefers-reduced-motion.
+- Brand gradient text (teal→amber) in topbar.
+- Themed thin scrollbars (webkit + firefox scrollbar-color).
+- prefers-reduced-motion media query (kills animations/transitions/confetti shimmer).
+- Print stylesheet extended (hides tour layer, timeout overlay, judge avatar).
+- Tour/timeout/modal polish: dashed progress dots, kbd chips in tour copy, urgent ring color, focus on primary buttons.
+
+TOOLING:
+- mock-server.js now serves /manifest.webmanifest, /sw.js, /icon.svg, /icon-maskable.svg with correct content types (mirrors a real static host).
+- README.md updated: new features list, Files table, deployment notes for PWA files.
+
+BUGS FOUND AND FIXED (both found by self-review/VLM QA during this round):
+1. Avatar hues nearly identical for consecutive IDs (C001→302, C002→303, C004→305, C005→306) because the last char dominated the modulo hash — FIXED with a murmur-style avalanche finalizer ((h^(h>>>16)) → imul → xor → imul → xor, all >>>0). Verified spread: 0/314/138/336.
+2. Signed-32-bit leak: Math.imul+xor produced negative hues — FIXED with explicit >>>0 normalization after each xor step.
+3. animateNum self-cancel: setting textContent before calling animateNum made from==to (no animation) and Number(null)=0 would misrender nulls — FIXED by removing the direct assignments and null-guarding inside animateNum.
+
+BROWSER E2E VERIFICATION (all passed):
+- Login → tour auto-starts (step 1/6 "Welcome"), advanced through all 6 steps via clicks, Finish sets jv_tour_done=1 + toast. Re-login: tour does NOT restart. Replay via Export menu works; spotlight positioned over .progress-wrap (210,211 860x46), tooltip below.
+- Session timeout (test hook 3s/5s): warning modal appears with countdown ticking 4→3...; "Stay signed in" hides modal and keeps session; armed 2.5s/3s → auto-logout returns to login screen.
+- Avatars: initials JD/MS/AG/LM with distinct hues (0/314/138/336); scored ring after save; judge avatar "JO" next to "· Judge One".
+- Top picks after scoring 85/92/100: 🥇Liza Mendoza 100, 🥈Maria Santos 92, 🥉Juan Dela Cruz 85; stats avg 92.3, hi 100, rem 1.
+- PWA: manifest+sw+icons serve 200; navigator.serviceWorker registrations = 1; offline reload serves shell from cache; online re-login restores scores.
+- Password toggle: click → type=text + aria-pressed=true; click again → password.
+- `d` shortcut toggles density-compact class + active button; search "zzzz" → empty state with Clear-filters button → click restores 4 cards.
+- VLM visual QA: card close-up confirms avatars render in distinct colors (AG green, JD red, MS magenta, LM pink) + green left accent on saved cards; tour spotlight screenshot confirms tooltip layering clean, no overlapping text.
+- Round-trip regression: 85→88→reload→"88 ✓ Saved Updated just now", server myVotes confirms {"C001":88,"C002":92,"C005":100} with timestamps.
+- Zero JS console errors / page errors throughout.
+
+Stage Summary:
+- 46/46 unit tests pass (unchanged — no backend changes this round).
+- index.html: 2940 → 3641 lines. New files: manifest.webmanifest, sw.js, icon.svg, icon-maskable.svg.
+- All round-5 features verified in-browser with no regressions.
+- Known notes: SW is a progressive enhancement (app fully functional without it); tour auto-start requires localStorage (private-mode users can replay from menu); session timeout is frontend-only (shared-secret model unchanged).
+
+Recommended next phase:
+- Optional: CSV batch upload for organizers to seed contestants/judges, judge notes/comments per contestant (needs backend column), organizer live-results auto-refresh, sound effects toggle, ARIA/screen-reader audit, localization (fil/es).

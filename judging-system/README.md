@@ -36,6 +36,9 @@ everything on every request.
 | ------------- | -------------------------------------------------------- |
 | `Code.gs`     | Apps Script backend. All validation, locking, persistence. |
 | `index.html`  | Static frontend. Login + judging dashboard.            |
+| `manifest.webmanifest` | PWA manifest (install to home screen).          |
+| `sw.js`       | Service worker — caches the app shell for offline use; never caches API calls. |
+| `icon.svg`, `icon-maskable.svg` | App icons (SVG, scale to any size).  |
 | `README.md`   | This document.                                          |
 | `test/`       | Node.js test harness that runs Code.gs against stubbed Apps Script services. |
 
@@ -146,10 +149,17 @@ const API_URL = 'https://script.google.com/macros/s/XXXXXXXX/exec';
 
 ### 5. Deploy `index.html` as a static site
 
+Upload the whole folder — `index.html` plus the PWA files
+(`manifest.webmanifest`, `sw.js`, `icon.svg`, `icon-maskable.svg`):
+
 - **Cloudflare Pages**: create a project, point it at the folder containing
   `index.html`, build command none, output directory `.`.
-- **GitHub Pages**: push `index.html` to a repo, enable Pages in repo
+- **GitHub Pages**: push the folder to a repo, enable Pages in repo
   settings → Pages → Deploy from branch.
+
+The service worker + manifest are optional enhancements — the app works
+perfectly without them (they enable install-to-home-screen and offline
+shell). `sw.js` never caches API responses, so scores are always fresh.
 
 No build step. No dependencies. It just works.
 
@@ -260,6 +270,27 @@ Validates in spec order, then upserts the vote inside a
 - **Export results to CSV** (organizer, Results tab) — downloads the rankings table
 - **Card density toggle** — Comfortable / Compact, persisted to localStorage
 - **Organizer view refresh button** — re-fetch results without a full page reload
+- **Contestant avatars** — colored initial circles with a deterministic hue per
+  contestant ID (same contestant, same color everywhere); ring turns green when
+  scored
+- **Judge avatar chip** — initials avatar next to the judge name in the dashboard
+  header (updates when the organizer edits the judge name)
+- **Top picks** — medal chips (🥇🥈🥉) showing the judge's own top-3 highest
+  scored contestants, updating live
+- **Session timeout warning** — after 20 minutes of inactivity a countdown
+  dialog appears; "Stay signed in" extends the session, otherwise the judge is
+  signed out automatically (protects shared/kiosk devices)
+- **Onboarding tour** — 6-step spotlight tour on first login (progress bar &
+  stats, toolbar, score cards, tabs, shortcuts); replay anytime from the Export
+  → "Restart guided tour" menu item
+- **PWA support** — `manifest.webmanifest` + `sw.js`; the app shell installs to
+  the home screen and opens offline (API calls always require the network so
+  scores are never stale)
+- **Password visibility toggle** on the login form
+- **Animated stats** — count-up animation + pop when values change
+- **Clear-filters button** in the empty search state
+- **Themed scrollbars**, brand gradient, card left-edge status accents,
+  `prefers-reduced-motion` support
 
 ---
 

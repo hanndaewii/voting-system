@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- JUDGED VOTE app icon — ballot card with a checkmark + score chip -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#134e4a"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="chip" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#0d9488"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- ballot card -->
+  <rect x="112" y="128" width="288" height="256" rx="28" fill="#ffffff" opacity="0.97"/>
+  <rect x="112" y="128" width="288" height="256" rx="28" fill="none" stroke="#0f766e" stroke-width="10" opacity="0.25"/>
+  <!-- score lines -->
+  <rect x="152" y="180" width="120" height="18" rx="9" fill="#0f172a" opacity="0.82"/>
+  <rect x="152" y="222" width="86" height="18" rx="9" fill="#0f172a" opacity="0.45"/>
+  <rect x="152" y="264" width="104" height="18" rx="9" fill="#0f172a" opacity="0.45"/>
+  <!-- score chip -->
+  <rect x="288" y="252" width="80" height="80" rx="20" fill="url(#chip)"/>
+  <!-- checkmark -->
+  <path d="M306 292 l16 16 l30 -34" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- gavel accent -->
+  <g transform="rotate(38 368 150)">
+    <rect x="330" y="96" width="76" height="26" rx="8" fill="#f59e0b"/>
+    <rect x="352" y="122" width="12" height="34" rx="4" fill="#b45309"/>
+  </g>
+</svg>
