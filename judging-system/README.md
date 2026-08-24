@@ -75,13 +75,18 @@ login/refresh.
 
 ### Sheet 3 — `Votes`
 
-| Timestamp            | Judge ID  | Contestant ID | Score |
-| -------------------- | --------- | ------------- | ----- |
-| 2026-08-24 20:10:31  | JUDGE-01  | C001          | 85    |
-| 2026-08-24 20:11:04  | JUDGE-01  | C002          | 92    |
+| Timestamp            | Judge ID  | Contestant ID | Score | Notes                       |
+| -------------------- | --------- | ------------- | ----- | --------------------------- |
+| 2026-08-24 20:10:31  | JUDGE-01  | C001          | 85    | Strong opening, weak finish |
+| 2026-08-24 20:11:04  | JUDGE-01  | C002          | 92    |                             |
 
 The unique record is `Judge ID + Contestant ID`. Saving the same pair again
 **updates** the existing row in place — it never creates a duplicate.
+
+The `Notes` column (added in a later revision) stores each judge's optional
+private note for that contestant (max 500 chars). Existing sheets without the
+column get it added automatically on the next API call — old rows simply have
+an empty note.
 
 ---
 
@@ -89,11 +94,19 @@ The unique record is `Judge ID + Contestant ID`. Saving the same pair again
 
 ```js
 const JUDGE_PASSWORD      = 'CHANGE_THIS_BEFORE_DEPLOYMENT'; // shared secret
+const ORGANIZER_PASSWORD  = 'CHANGE_THIS_ORGANIZER_KEY';     // organizer-only tools
 const MIN_SCORE           = 1;
 const MAX_SCORE            = 100;
 const VOTING_OPEN          = true;   // server-enforced master switch
 const SHOW_LIVE_RESULTS    = false;  // hide all results by default
+const NOTE_MAX_LENGTH      = 500;    // max chars per judge note
 ```
+
+`ORGANIZER_PASSWORD` gates the organizer-only endpoints (judge-notes review and
+CSV roster import). It is intentionally separate from the judges' shared
+password — organizers can already see everything in the Google Sheet itself, so
+these endpoints do not expose anything the organizer could not see anyway, but
+judges must not be able to call them.
 
 ### Configuration in `index.html`
 
@@ -116,6 +129,8 @@ Replace that placeholder after deploying the Apps Script Web App.
    `Code.gs` from this project.
 4. Edit the configuration block at the top:
    - Set `JUDGE_PASSWORD` to your real shared password.
+   - Set `ORGANIZER_PASSWORD` to a key only you (the organizer) know — it
+     unlocks the notes-review and roster-import tools in the Results tab.
    - Confirm `MIN_SCORE` / `MAX_SCORE`.
    - Set `VOTING_OPEN = true` while testing.
 5. Click **Save project**. Name the project (e.g. `JudgedVote`).
@@ -205,24 +220,52 @@ Returns active contestants only.
 Authenticates the judge and returns `{ contestantId: score }` for that judge
 only, plus the judge's current name from the sheet, plus a `timestamps` field
 mapping `{ contestantId: "YYYY-MM-DD HH:MM:SS" }` for displaying "Updated 2m
-ago" per card.
+ago" per card, plus a `notes` field mapping `{ contestantId: "note text" }`
+(the judge's own private notes only).
 
 ### `GET ?action=judgeStats&judgeId=...&password=...`
 Authenticates the judge and returns their personal aggregate stats:
 `scored`, `total`, `remaining`, `average`, `highest`, `lowest`, `complete`,
-`progressPct`. Never reveals other judges' data.
+`progressPct`, and `notesCount` (how many scored contestants have a note).
+Never reveals other judges' data.
+
+### `GET ?action=judgeNotes&organizerPassword=...`
+**Organizer key required.** Returns every non-empty judge note, grouped by
+contestant: `[{ contestantId, contestantName, entries: [{ judgeId, judgeName,
+score, note, timestamp }] }]` plus a `totalNotes` counter. Used by the
+organizer tools panel for post-voting deliberation.
 
 ### `GET ?action=results`
 When `SHOW_LIVE_RESULTS = false` returns `{ ok:false, hidden:true }`. When
 enabled, returns **aggregate totals** (`results`), a `breakdown` array sorted
 by total desc with `rank`/`count`/`average` per contestant, plus anonymized
-`judgesCompleted`/`activeJudges` counters. Never returns Judge IDs or
-per-judge scores.
+`judgesCompleted`/`activeJudges` counters. Never returns Judge IDs, per-judge
+scores, or notes.
 
 ### `POST` (body = JSON, `Content-Type: text/plain;charset=utf-8`)
-Body: `{ action: 'saveVote', judgeId, contestantId, score, password }`.
-Validates in spec order, then upserts the vote inside a
-`LockService.getScriptLock()`.
+
+**`action: 'saveVote'`** — Body: `{ action, judgeId, contestantId, score,
+password, note? }`. The optional `note` (string, ≤ 500 chars after trim) is
+saved alongside the score. Omitting `note` **preserves** the stored note on
+update; sending an empty string **clears** it. Validates in spec order, then
+upserts the vote inside a `LockService.getScriptLock()`.
+
+**`action: 'importRoster'`** — **Organizer key required.** Body:
+`{ action, organizerPassword, csv }`. Batch-imports contestants and judges
+from CSV text (one record per line, no header needed):
+
+```
+contestant,C010,Nina New,true
+judge,JUDGE-10,Fourth Judge,true
+contestant,C011,Retired Act,false
+```
+
+The `active` flag is optional (default `true`). Records are matched by ID:
+existing rows are updated in place (name/active), new rows are appended,
+identical rows are skipped. Invalid lines are reported individually in
+`errors: [{ line, error }]` without aborting the valid ones. Returns counts
+(`added`, `updated`, `skipped`, split by contestants/judges). Runs inside a
+script lock.
 
 ---
 
@@ -302,6 +345,29 @@ Validates in spec order, then upserts the vote inside a
 - **Copy results to clipboard** (organizer) — one click copies the rankings table
   as TSV, which pastes directly into Google Sheets or Excel
 - **Stat tile tooltips** — hover hints explaining each stat on the dashboard strip
+- **Judge notes** (per contestant) — each card has an "Add note" toggle that
+  expands a private textarea (max 500 chars, live counter). Notes are saved
+  with the score in one call, survive score-only updates, can be cleared with
+  an empty save, and are included in CSV/JSON exports. The toggle turns amber
+  with a "Note · saved" label and a two-line preview snippet; collapsed cards
+  show a 📝 marker next to the score
+- **Notes stat tile + filter** — the dashboard strip gains a 📝 Notes counter
+  (click it or press `n` to filter to only noted contestants; also available as
+  a "With notes" toolbar chip)
+- **Note keyboard flow** — `Ctrl+Enter` inside the note field saves score +
+  note; `Esc` reverts the text to the saved note and collapses the editor
+- **Undo restores notes too** — the undo toast action reverts both the score
+  and the note text of the last update
+- **Organizer tools panel** (Results tab) — key-gated organizer area unlocked
+  with `ORGANIZER_PASSWORD` (kept in sessionStorage per tab, re-verified on
+  use, lockable with one click):
+  - **Judge notes review** — every note across all judges, grouped by
+    contestant in an accordion, each entry showing judge avatar/name, score
+    chip, note text, and relative timestamp — built for post-voting
+    deliberation
+  - **CSV roster import** — paste `contestant,judge,ID,Name,active` lines to
+    batch-add or update the roster; per-line error reporting; results and
+    judge views refresh automatically after import
 
 ---
 

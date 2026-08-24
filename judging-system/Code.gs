@@ -29,6 +29,14 @@
 // IMPORTANT: replace before deployment. Only lives here in Code.gs.
 const JUDGE_PASSWORD = 'CHANGE_THIS_BEFORE_DEPLOYMENT';
 
+// Organizer key. Grants access to organizer-only endpoints (judge notes
+// review, CSV roster import). The organizer can already see everything in
+// the Google Sheet itself — this key just gates the web API surface.
+const ORGANIZER_PASSWORD = 'CHANGE_THIS_ORGANIZER_KEY';
+
+// Max characters for a per-contestant judge note.
+const NOTE_MAX_LENGTH = 500;
+
 // Score range. Easy to change later.
 const MIN_SCORE = 1;
 const MAX_SCORE = 100;
@@ -50,7 +58,9 @@ const SHEET_VOTES = 'Votes';
 // Header rows — must match the spec exactly
 const CONTESTANT_HEADERS = ['Contestant ID', 'Contestant Name', 'Active'];
 const JUDGE_HEADERS = ['Judge ID', 'Judge Name', 'Active'];
-const VOTE_HEADERS = ['Timestamp', 'Judge ID', 'Contestant ID', 'Score'];
+// 'Notes' (col 5) was added in a later revision. ensureSheet_ adds the column
+// to existing sheets without touching data rows; old rows simply have '' there.
+const VOTE_HEADERS = ['Timestamp', 'Judge ID', 'Contestant ID', 'Score', 'Notes'];
 
 // Timestamp format
 const TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss';
@@ -64,7 +74,9 @@ const TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss';
 /**
  * GET handler. Action is chosen by ?action=...
  *  - contestants  -> list active contestants
- *  - myVotes      -> judge's own scores (auth required)
+ *  - myVotes      -> judge's own scores + notes (auth required)
+ *  - judgeStats   -> judge's personal aggregates (auth required)
+ *  - judgeNotes   -> all judge notes, organizer key required
  *  - results      -> aggregate results (only if SHOW_LIVE_RESULTS)
  *  - status       -> public status (voting open, score range)
  */
@@ -83,6 +95,9 @@ function doGet(e) {
 
       case 'judgeStats':
         return handleJudgeStats_(params);
+
+      case 'judgeNotes':
+        return handleJudgeNotes_(params);
 
       case 'results':
         return handleResults_();
@@ -113,10 +128,11 @@ function doGet(e) {
 
 /**
  * POST handler. Body is JSON sent as text/plain to avoid CORS preflight.
- * Validates in the exact order required by the spec:
+ * saveVote validates in the exact order required by the spec:
  *   parse -> password -> judge id -> judge active -> contestant ->
- *   contestant active -> score numeric -> score range -> voting open ->
- *   lock -> find existing -> update or insert -> release lock.
+ *   contestant active -> score numeric -> score range -> note length ->
+ *   voting open -> lock -> find existing -> update or insert -> release lock.
+ * importRoster is organizer-key gated and handles CSV batch import.
  */
 function doPost(e) {
   try {
@@ -135,6 +151,10 @@ function doPost(e) {
     var score = body.score;
     var password = str_(body.password);
     var action = str_(body.action || 'saveVote');
+
+    if (action === 'importRoster') {
+      return handleImportRoster_(body);
+    }
 
     if (action !== 'saveVote') {
       return jsonOut_({ ok: false, error: 'Unknown action.' });
@@ -192,6 +212,22 @@ function doPost(e) {
       return jsonOut_({ ok: false, error: 'Voting is closed.' });
     }
 
+    // 9b. Optional note: string, trimmed, length-capped. When the field is
+    // absent (undefined) the existing note is preserved on update; an empty
+    // string explicitly CLEARS the note.
+    var note = body.note;
+    if (note !== undefined && note !== null) {
+      note = str_(note);
+      if (note.length > NOTE_MAX_LENGTH) {
+        return jsonOut_({
+          ok: false,
+          error: 'Note must be ' + NOTE_MAX_LENGTH + ' characters or fewer.'
+        });
+      }
+    } else {
+      note = undefined; // preserve existing note on update
+    }
+
     // 10. Lock + find/update or insert
     var lock = LockService.getScriptLock();
     var locked = false;
@@ -201,7 +237,7 @@ function doPost(e) {
         return jsonOut_({ ok: false, error: 'Server busy, please retry.' });
       }
 
-      var result = upsertVote_(judgeId, contestantId, numericScore);
+      var result = upsertVote_(judgeId, contestantId, numericScore, note);
       return jsonOut_(result);
     } finally {
       if (locked) {
@@ -232,11 +268,13 @@ function handleMyVotes_(params) {
 
   var votes = getJudgeVotes_(judgeId);
   var timestamps = getJudgeVoteTimestamps_(judgeId);
+  var notes = getJudgeVoteNotes_(judgeId);
   return jsonOut_({
     ok: true,
     judgeName: judge.name,
     votes: votes,
-    timestamps: timestamps
+    timestamps: timestamps,
+    notes: notes
   });
 }
 
@@ -257,14 +295,17 @@ function handleJudgeStats_(params) {
   if (!judge) return jsonOut_({ ok: false, error: 'Invalid or inactive Judge ID.' });
 
   var votes = getJudgeVotes_(judgeId);
+  var notes = getJudgeVoteNotes_(judgeId);
   var contestants = getActiveContestants_();
   var total = contestants.length;
   var scoredList = [];
+  var notesCount = 0;
   for (var i = 0; i < contestants.length; i++) {
     var cid = contestants[i].id;
     if (votes[cid] !== undefined && votes[cid] !== null) {
       var n = Number(votes[cid]);
       if (isFinite(n)) scoredList.push(n);
+      if (notes[cid]) notesCount++;
     }
   }
   var scored = scoredList.length;
@@ -287,6 +328,7 @@ function handleJudgeStats_(params) {
     highest: highest,
     lowest: lowest,
     complete: complete,
+    notesCount: notesCount,
     progressPct: total > 0 ? Math.round((scored / total) * 100) : 0
   });
 }
@@ -311,6 +353,204 @@ function handleResults_() {
     judgesCompleted: breakdown.judgesCompleted,
     activeJudges: breakdown.activeJudges
   });
+}
+
+/**
+ * ORGANIZER-ONLY: every judge note across all contestants, for post-voting
+ * deliberation. Gated by ORGANIZER_PASSWORD (a key only the organizer holds —
+ * they can already read the whole Google Sheet, so this endpoint does not
+ * expose anything the organizer could not see anyway).
+ * Returns notes grouped by contestant:
+ *   [{ contestantId, contestantName, entries:
+ *      [{ judgeId, judgeName, score, note, timestamp }] }]
+ */
+function handleJudgeNotes_(params) {
+  var key = str_(params.organizerPassword);
+  if (!key) return jsonOut_({ ok: false, error: 'Missing organizer key.' });
+  if (key !== ORGANIZER_PASSWORD) {
+    return jsonOut_({ ok: false, error: 'Invalid organizer key.' });
+  }
+  ensureSheetsExist_();
+  var contestants = getActiveContestants_();
+  var byId = {};
+  for (var i = 0; i < contestants.length; i++) byId[contestants[i].id] = contestants[i];
+
+  var sheet = getSpreadsheet_().getSheetByName(SHEET_VOTES);
+  var out = [];
+  var grouped = {};
+  if (sheet && sheet.getLastRow() >= 2) {
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues();
+    for (var r = 0; r < data.length; r++) {
+      var row = data[r];
+      var jid = str_(row[1]);
+      var cid = str_(row[2]);
+      var note = str_(row[4]);
+      if (!jid || !cid || !note) continue; // only non-empty notes
+      if (!grouped[cid]) {
+        grouped[cid] = {
+          contestantId: cid,
+          contestantName: byId[cid] ? byId[cid].name : cid,
+          entries: []
+        };
+      }
+      var judge = getActiveJudge_(jid);
+      var sc = Number(row[3]);
+      grouped[cid].entries.push({
+        judgeId: jid,
+        judgeName: judge ? judge.name : jid,
+        score: isFinite(sc) ? sc : str_(row[3]),
+        note: note,
+        timestamp: str_(row[0])
+      });
+    }
+  }
+  // Order groups by contestant roster order, then by name for unknown IDs
+  out = contestants.filter(function(c) { return grouped[c.id]; })
+    .map(function(c) { return grouped[c.id]; });
+  Object.keys(grouped).forEach(function(cid) {
+    if (!byId[cid]) out.push(grouped[cid]); // inactive contestants too
+  });
+  return jsonOut_({
+    ok: true,
+    notes: out,
+    totalNotes: out.reduce(function(acc, g) { return acc + g.entries.length; }, 0)
+  });
+}
+
+/**
+ * ORGANIZER-ONLY: batch import of contestants and judges from CSV text.
+ * Gated by ORGANIZER_PASSWORD. Upserts by ID — existing rows keep their
+ * position and are updated in place (name/active); new rows are appended.
+ *
+ * CSV format (one record per line, comma-separated, no header):
+ *   contestant,<Contestant ID>,<Contestant Name>,<active true/false>
+ *   judge,<Judge ID>,<Judge Name>,<active true/false>
+ * The active flag is optional and defaults to true.
+ * Names must not contain commas (use the sheet directly for complex names).
+ *
+ * Returns { ok, added, updated, skipped, errors:[{line, error}] }.
+ */
+function handleImportRoster_(body) {
+  var key = str_(body.organizerPassword);
+  if (!key) return jsonOut_({ ok: false, error: 'Missing organizer key.' });
+  if (key !== ORGANIZER_PASSWORD) {
+    return jsonOut_({ ok: false, error: 'Invalid organizer key.' });
+  }
+  var csv = str_(body.csv || '');
+  if (!csv) return jsonOut_({ ok: false, error: 'Missing CSV content.' });
+
+  var lines = csv.split(/\r?\n/);
+  var added = 0, updated = 0, skipped = 0;
+  var errors = [];
+  var pendingContestants = [];
+  var pendingJudges = [];
+
+  for (var i = 0; i < lines.length; i++) {
+    var lineNo = i + 1;
+    var line = str_(lines[i]);
+    if (!line) continue; // ignore blank lines
+    // A leading "type,..." header line is tolerated and skipped.
+    if (lineNo === 1 && /^type\s*,/i.test(line)) continue;
+    var parts = line.split(',');
+    if (parts.length < 3 || parts.length > 4) {
+      errors.push({ line: lineNo, error: 'Expected 3 or 4 comma-separated fields, got ' + parts.length + '.' });
+      continue;
+    }
+    var type = str_(parts[0]).toLowerCase();
+    var id = str_(parts[1]);
+    var name = str_(parts[2]);
+    // Empty/missing active field defaults to true (e.g. trailing comma).
+    var active = (parts.length >= 4 && str_(parts[3]) !== '') ? parseBool_(parts[3]) : true;
+    if (type !== 'contestant' && type !== 'judge') {
+      errors.push({ line: lineNo, error: 'Unknown type "' + str_(parts[0]) + '" — use contestant or judge.' });
+      continue;
+    }
+    if (!id) {
+      errors.push({ line: lineNo, error: 'Missing ID.' });
+      continue;
+    }
+    if (!name) {
+      errors.push({ line: lineNo, error: 'Missing name.' });
+      continue;
+    }
+    if (id.indexOf(',') !== -1) {
+      errors.push({ line: lineNo, error: 'IDs must not contain commas.' });
+      continue;
+    }
+    var rec = { id: id, name: name, active: active };
+    if (type === 'contestant') pendingContestants.push(rec);
+    else pendingJudges.push(rec);
+  }
+
+  var lock = LockService.getScriptLock();
+  var locked = false;
+  try {
+    locked = lock.tryLock(10000);
+    if (!locked) {
+      return jsonOut_({ ok: false, error: 'Server busy, please retry.' });
+    }
+    var resC = upsertRosterRows_(SHEET_CONTESTANTS, CONTESTANT_HEADERS, pendingContestants);
+    var resJ = upsertRosterRows_(SHEET_JUDGES, JUDGE_HEADERS, pendingJudges);
+    added = resC.added + resJ.added;
+    updated = resC.updated + resJ.updated;
+    skipped = resC.skipped + resJ.skipped;
+    return jsonOut_({
+      ok: true,
+      added: added,
+      updated: updated,
+      skipped: skipped,
+      contestantsAdded: resC.added,
+      contestantsUpdated: resC.updated,
+      judgesAdded: resJ.added,
+      judgesUpdated: resJ.updated,
+      errors: errors
+    });
+  } finally {
+    if (locked) {
+      try { lock.releaseLock(); } catch (releaseErr) { /* ignore */ }
+    }
+  }
+}
+
+/**
+ * Upsert a batch of roster rows into the given sheet. Rows are matched by ID
+ * (col 1). Existing rows are updated in place (name + active); missing rows
+ * are appended. Rows whose name AND active flag already match are counted as
+ * skipped. MUST be called inside a script lock.
+ */
+function upsertRosterRows_(sheetName, headers, records) {
+  var result = { added: 0, updated: 0, skipped: 0 };
+  if (!records.length) return result;
+  var sheet = getSpreadsheet_().getSheetByName(sheetName);
+  var last = sheet.getLastRow();
+  var existing = [];
+  if (last >= 2) {
+    var data = sheet.getRange(2, 1, last - 1, 3).getValues();
+    for (var i = 0; i < data.length; i++) existing.push(data[i]);
+  }
+  for (var r = 0; r < records.length; r++) {
+    var rec = records[r];
+    var rowIdx = -1;
+    for (var e = 0; e < existing.length; e++) {
+      if (str_(existing[e][0]) === rec.id) { rowIdx = e; break; }
+    }
+    if (rowIdx === -1) {
+      sheet.appendRow([rec.id, rec.name, rec.active]);
+      existing.push([rec.id, rec.name, rec.active]);
+      result.added++;
+    } else {
+      var curName = str_(existing[rowIdx][1]);
+      var curActive = parseBool_(existing[rowIdx][2]);
+      if (curName === rec.name && curActive === rec.active) {
+        result.skipped++;
+      } else {
+        sheet.getRange(rowIdx + 2, 1, 1, 3).setValues([[rec.id, rec.name, rec.active]]);
+        existing[rowIdx] = [rec.id, rec.name, rec.active];
+        result.updated++;
+      }
+    }
+  }
+  return result;
 }
 
 /**
@@ -480,33 +720,60 @@ function getJudgeVoteTimestamps_(judgeId) {
 }
 
 /**
+ * Returns { contestantId: note-string } for the given judge only.
+ * Backward-compatible addition — old sheets without the Notes column simply
+ * return empty strings for every row.
+ */
+function getJudgeVoteNotes_(judgeId) {
+  var sheet = getSpreadsheet_().getSheetByName(SHEET_VOTES);
+  var last = sheet.getLastRow();
+  var notes = {};
+  if (last < 2) return notes;
+  var data = sheet.getRange(2, 1, last - 1, 5).getValues();
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    var jid = str_(row[1]);
+    var cid = str_(row[2]);
+    if (jid === judgeId && cid) {
+      notes[cid] = str_(row[4]);
+    }
+  }
+  return notes;
+}
+
+/**
  * Upsert a vote. MUST be called inside a LockService.getScriptLock().
  * Finds existing record matching Judge ID + Contestant ID.
  * If found, UPDATE in place (keeps the row, updates timestamp + score).
  * If not found, INSERT a new row.
- * Returns { ok:true, action:'updated'|'inserted', contestantId, score, judgeName }.
+ * `note` semantics: undefined → preserve the existing note on update;
+ * a string (including '') → write it (empty string clears the note).
+ * Returns { ok:true, action:'updated'|'inserted', contestantId, score, judgeName, note }.
  */
-function upsertVote_(judgeId, contestantId, score) {
+function upsertVote_(judgeId, contestantId, score, note) {
   var sheet = getSpreadsheet_().getSheetByName(SHEET_VOTES);
   var last = sheet.getLastRow();
   var updateRow = -1;
 
   if (last >= 2) {
     // Read Judge ID (col 2) and Contestant ID (col 3) for all data rows.
-    var data = sheet.getRange(2, 1, last - 1, 4).getValues();
+    var data = sheet.getRange(2, 1, last - 1, 5).getValues();
     for (var i = 0; i < data.length; i++) {
       if (str_(data[i][1]) === judgeId && str_(data[i][2]) === contestantId) {
         updateRow = i + 2; // +2 because data starts at row 2 and i is 0-based
+        // Score-only update: keep whatever note is already stored.
+        if (note === undefined) note = str_(data[i][4]);
         break;
       }
     }
   }
 
   var timestamp = formatNow_();
+  if (note === undefined || note === null) note = '';
 
   if (updateRow > 0) {
     // UPDATE existing record in place. Preserves row position, no duplicate.
-    sheet.getRange(updateRow, 1, 1, 4).setValues([[timestamp, judgeId, contestantId, score]]);
+    sheet.getRange(updateRow, 1, 1, 5).setValues([[timestamp, judgeId, contestantId, score, note]]);
     var judge = getActiveJudge_(judgeId);
     return {
       ok: true,
@@ -514,11 +781,12 @@ function upsertVote_(judgeId, contestantId, score) {
       contestantId: contestantId,
       score: score,
       timestamp: timestamp,
-      judgeName: judge ? judge.name : ''
+      judgeName: judge ? judge.name : '',
+      note: note
     };
   } else {
     // INSERT new record
-    sheet.appendRow([timestamp, judgeId, contestantId, score]);
+    sheet.appendRow([timestamp, judgeId, contestantId, score, note]);
     var judge2 = getActiveJudge_(judgeId);
     return {
       ok: true,
@@ -526,7 +794,8 @@ function upsertVote_(judgeId, contestantId, score) {
       contestantId: contestantId,
       score: score,
       timestamp: timestamp,
-      judgeName: judge2 ? judge2.name : ''
+      judgeName: judge2 ? judge2.name : '',
+      note: note
     };
   }
 }

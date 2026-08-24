@@ -1,0 +1,483 @@
+     1→# Project Worklog — Judging/Voting System
+     2→
+     3→## Project Status
+     4→Building a **static HTML/CSS/JS frontend (`index.html`) + Google Apps Script backend (`Code.gs`)** judging/voting system per the user's detailed spec. This is NOT a Next.js app — the user explicitly required vanilla JS, no framework, no build system, deployable to Cloudflare Pages / GitHub Pages, with Google Sheets as the source of truth and Apps Script as the only backend.
+     5→
+     6→## Location
+     7→All deliverables live under `/home/z/my-project/judging-system/`:
+     8→- `Code.gs` — Apps Script backend
+     9→- `index.html` — static frontend
+    10→- `README.md` — setup/deployment guide
+    11→- `test/` — Node.js test harness stubbing Apps Script services
+    12→
+    13→## Goals
+    14→- Implement all 31 sections of the spec.
+    15→- Build a real Node.js test harness that executes Code.gs logic against stubbed Apps Script globals (SpreadsheetApp, LockService, ContentService, Session, Utilities).
+    16→- Run every test from section 28, fix bugs, re-run until green.
+    17→- Verify the full round-trip: save score → reload → retrieve score → display.
+    18→
+    19→---
+    20→Task ID: 1
+    21→Agent: main
+    22→Task: Initialize project structure and worklog.
+    23→
+    24→Work Log:
+    25→- Created `/home/z/my-project/judging-system/` workspace folder.
+    26→- Initialized this worklog file.
+    27→- Planned todo breakdown for the whole build.
+    28→
+    29→Stage Summary:
+    30→- Workspace ready. Proceeding to write Code.gs next.
+    31→
+    32→---
+    33→Task ID: 2
+    34→Agent: main
+    35→Task: Write Code.gs (Google Apps Script backend).
+    36→
+    37→Work Log:
+    38→- Implemented doGet/doPost with action routing (contestants / myVotes / results / status / saveVote).
+    39→- Validation in exact spec order: parse JSON -> password -> judge id -> judge active -> contestant -> contestant active -> score numeric -> score range -> voting open -> lock -> find-or-update/insert -> release lock in finally.
+    40→- LockService.getScriptLock() wraps the find-and-update/insert so simultaneous requests can't create duplicates.
+    41→- ensureSheetsExist_() auto-creates the three sheets with correct headers on first API call.
+    42→- Judge name always looked up fresh from the Judges sheet on every login/refresh (never cached client-side).
+    43→- SHOW_LIVE_RESULTS=false by default; results endpoint only returns aggregates, never per-judge votes or Judge IDs.
+    44→- VOTING_OPEN enforced server-side — direct API calls are rejected when closed.
+    45→
+    46→Stage Summary:
+    47→- Code.gs is 490 lines, no external dependencies, ready to paste into the Apps Script editor.
+    48→
+    49→---
+    50→Task ID: 3
+    51→Agent: main
+    52→Task: Write index.html (static vanilla JS frontend).
+    53→
+    54→Work Log:
+    55→- Single index.html, no framework, no build step. Mobile-first responsive CSS with sticky footer (flex column layout).
+    56→- Login screen + judging dashboard. sessionStorage stores creds for the browser session only.
+    57→- Each contestant card has its own score input + Save/Update button + status badge (notscored / saving / saved / updating / error).
+    58→- Progress bar at the top, computed from server truth (not localStorage).
+    59→- POST uses Content-Type: text/plain;charset=utf-8 to avoid Apps Script CORS preflight.
+    60→- saveVoteWithRetry() retries ONCE for transient errors only; never retries definitive errors.
+    61→- API_URL placeholder at the top of the <script>: 'PASTE_YOUR_APPS_SCRIPT_EXEC_URL_HERE'.
+    62→- No hardcoded password, judge IDs, or judge names. Login field placeholder is generic "Your Judge ID".
+    63→
+    64→Stage Summary:
+    65→- index.html is 990 lines, self-contained, deployable to Cloudflare/GitHub Pages.
+    66→
+    67→---
+    68→Task ID: 4
+    69→Agent: main
+    70→Task: Write README.md.
+    71→
+    72→Work Log:
+    73→- Documented architecture, sheet structure, config, deployment steps (Sheets -> Apps Script -> Deploy -> exec URL -> index.html -> static host), API reference, security model.
+    74→
+    75→Stage Summary:
+    76→- README.md is 235 lines.
+    77→
+    78→---
+    79→Task ID: 5
+    80→Agent: main
+    81→Task: Build Node.js test harness stubbing Apps Script services.
+    82→
+    83→Work Log:
+    84→- test/loader.js: shared stubs for SpreadsheetApp (MockRange/MockSheet/MockSpreadsheet), LockService (acquire/release counters), ContentService (MockOutput), Session, Utilities.
+    85→- test/run-tests.js: loads Code.gs via `new Function(...stubKeys, source + return {...})`, runs all 35 spec tests.
+    86→- test/mock-server.js: HTTP server that reuses Code.gs+stubs to serve a real /api + patched index.html for browser E2E tests.
+    87→
+    88→Stage Summary:
+    89→- All 35 spec tests pass on first run.
+    90→
+    91→---
+    92→Task ID: 6
+    93→Agent: main
+    94→Task: Run test harness, fix bugs, re-run.
+    95→
+    96→Work Log:
+    97→- All 35 tests passed on first run; no bugs found in backend logic.
+    98→- LEAK-2 (no hard-coded judge IDs in index.html): changed login placeholder from "JUDGE-01" to "Your Judge ID" to pass strictly.
+    99→
+   100→Stage Summary:
+   101→- 35/35 tests pass. 0 failures.
+   102→
+   103→---
+   104→Task ID: 7
+   105→Agent: main
+   106→Task: Verify round-trip workflow via Agent Browser.
+   107→
+   108→Work Log:
+   109→- Built mock-server.js (reuses real Code.gs with stubbed Apps Script services) so the actual frontend can be driven end-to-end.
+   110→- Ran 20 browser-based E2E tests covering: login screen, HTML5 validation, wrong-password alert, valid login with judge-name lookup, inactive contestant exclusion, save score -> SAVED badge, update score (no duplicate), progress bar, refresh -> scores persist, mobile viewport, sticky footer on short content, footer pushed down on long content, logout, score-out-of-range rejection, non-numeric rejection, voting-closed (UI disables + server rejects), judge-name edit reflected on refresh, results hidden by default.
+   111→
+   112→Stage Summary:
+   113→- The spec's "MOST IMPORTANT REQUIREMENT" round-trip is verified live in a real browser:
+   114→    Judge enters 85 -> sheet row JUDGE-01|C001|85
+   115→    Judge changes to 90 -> sheet row updated to JUDGE-01|C001|90 (no duplicate)
+   116→    Judge refreshes -> frontend retrieves C001=90 -> displays "90 ✓ SAVED"
+   117→- Judge name edit round-trip also verified: "Judge One" -> organizer edits sheet to "Atty. Juan Dela Cruz" -> refresh -> dashboard shows new name, Judge ID and votes unchanged.
+   118→
+   119→---
+   120→Task ID: 8
+   121→Agent: main
+   122→Task: Create 15-minute webDevReview cron job.
+   123→
+   124→Work Log:
+   125→- Will create recurring cron job (every 15 minutes, webDevReview kind) per the mandatory post-completion instruction.
+   126→
+   127→Stage Summary:
+   128→- Pending creation.
+   129→
+   130→---
+   131→Task ID: 8 (final)
+   132→Agent: main
+   133→Task: 15-minute webDevReview cron job created.
+   134→
+   135→Work Log:
+   136→- Created recurring cron job (job_id 335200, fixed_rate 900s = every 15 minutes, webDevReview kind, Asia/Manila tz, priority 5).
+   137→- The job prompt instructs the reviewer agent to read this worklog, run the test harness (cd /home/z/my-project/judging-system/test && node run-tests.js), start the mock server and use agent-browser for E2E QA, then either fix bugs or propose new features, and append its work to this worklog.
+   138→
+   139→Stage Summary:
+   140→- Self-healing review loop in place. Project is feature-complete against the spec.
+   141→
+   142→---
+   143→Task ID: 9
+   144→Agent: main
+   145→Task: Final report (see chat output).
+   146→
+   147→Stage Summary:
+   148→- 35/35 spec tests pass. 20 browser E2E checks pass. Round-trip workflow verified live. GO recommendation.
+   149→
+   150→---
+   151→Task ID: 10 (webDevReview round 1)
+   152→Agent: webDevReview
+   153→Task: QA baseline + new features + styling improvements.
+   154→
+   155→Work Log:
+   156→- Read worklog; project was feature-complete and stable (35/35 tests).
+   157→- Ran QA baseline: 35/35 tests passed, mock server + browser smoke test OK.
+   158→
+   159→NEW BACKEND FEATURES (Code.gs):
+   160→- New `GET ?action=judgeStats` endpoint: returns the logged-in judge's personal aggregates (scored, total, remaining, average, highest, lowest, complete, progressPct). Auth-gated; never leaks other judges' data.
+   161→- Enriched `GET ?action=status`: now also returns activeJudges, activeContestants, serverTime. Backward-compatible (all old fields still present).
+   162→- New helper countActiveJudges_().
+   163→- Added 5 new tests: STATS-1..4 (judgeStats correctness/privacy/auth/complete-flag) and STATUS-1 (enriched status). Total tests: 40/40 PASS.
+   164→
+   165→NEW FRONTEND FEATURES (index.html — full rewrite, ~1240 lines):
+   166→- Dark mode toggle (persisted to localStorage via jv_theme key; data-theme attribute on <html>).
+   167→- Personal stats strip: Average | Highest | Lowest | Remaining tiles, fed by judgeStats endpoint.
+   168→- Quick-score chips: 5 preset buttons per card derived from min/max score range (tap to fill input).
+   169→- Score heatmap: input tints red/amber/green based on value position in range (heat-low/mid/high classes).
+   170→- Search contestants by name or ID (filters grid live).
+   171→- Sort dropdown: Unscored first / Name A→Z / Score low→high / Score high→low.
+   172→- "Unscored only" filter toggle chip.
+   173→- Toast notification system (slide-in, auto-dismiss, dismiss button) for save success/error/info.
+   174→- Completion celebration: confetti overlay + banner when judge scores 100% of active contestants (fires once per session; auto-hides after 3.8s).
+   175→- Unsaved-changes guard: beforeunload handler + confirm() dialog on logout when inputs differ from saved scores.
+   176→- Enter key saves score from within input.
+   177→
+   178→STYLING IMPROVEMENTS:
+   179→- Full dark theme via CSS variable overrides on [data-theme="dark"].
+   180→- Gradient accents: auth-card top bar, dashboard left edge, progress bar shimmer animation, primary button gradient.
+   181→- Card entrance animation (staggered fade-up), hover lift with shadow.
+   182→- Branded pulsing brand-dot, refined badge/border colors per theme.
+   183→- Toast stack with slide-in/out animations.
+   184→- Safe-area insets (env(safe-area-inset-bottom/top)) for iOS notch devices.
+   185→- Sticky footer preserved: verified footerBottom==viewport on short login screen, pushed down naturally on long dashboard.
+   186→- Refined typography, focus rings, skeleton shimmer.
+   187→
+   188→BROWSER E2E VERIFICATION (all passed):
+   189→- Login + dashboard render with all new controls.
+   190→- Dark mode toggles light→dark→light correctly; screenshots captured (light + dark, mobile).
+   191→- Quick-score chip "75" fills input, heatmap class applies (heat-high for 75, heat-low for 20, heat-mid for 50).
+   192→- Save shows toast "Saved C001 = 75", badge "✓ Saved", stats update live (avg/hi/lo/rem/pct).
+   193→- Search "Maria"→C002 only, "ana"→C004 only, "zzz"→empty state, clear→all 4 cards.
+   194→- Unscored-only toggle filters correctly.
+   195→- Sort by name gives alphabetical order.
+   196→- Scoring all contestants triggers CELEBRATION (confetti shown, auto-hidden), progress "4 / 4 | 100%", stats populated.
+   197→- Unsaved-changes: confirm=false blocks logout (stays logged in), confirm=true proceeds, no-changes logout proceeds immediately.
+   198→- Round-trip regression: save 85 → update to 90 → reload → value 90 + "✓ Saved" + server myVotes returns {"C001":90}.
+   199→- No JS console errors.
+   200→
+   201→BUGS FOUND AND FIXED:
+   202→- Test-tooling only: agent-browser eval with bare `return` outside a function threw SyntaxError ("Illegal return statement") which initially made logout look broken; re-tested with IIFE wrappers — logout works correctly in all 3 scenarios. No app bugs found this round.
+   203→
+   204→Stage Summary:
+   205→- 40/40 tests pass (35 original + 5 new). All new features verified in-browser.
+   206→- Known risks: celebration uses CSS animations only (no audio); beforeunload guard is best-effort (browsers may not show custom text); dark theme persists per-browser via localStorage (not synced to Google account).
+   207→
+   208→Recommended next phase:
+   209→- Optional: "Export my scores" (printable/PDF view), keyboard shortcut overlay, undo-last-save, organizer dashboard route (read-only aggregate view when SHOW_LIVE_RESULTS=true).
+   210→
+   211→---
+   212→Task ID: 20 (webDevReview round 2)
+   213→Agent: webDevReview
+   214→Task: QA baseline + new features (export, undo, auto-save, keyboard shortcuts, timestamps) + styling.
+   215→
+   216→Work Log:
+   217→- Read worklog; project stable at 40/40 tests from round 1.
+   218→- QA baseline: 40/40 tests passed, browser smoke clean.
+   219→
+   220→NEW BACKEND FEATURES (Code.gs):
+   221→- New helper getJudgeVoteTimestamps_(judgeId) returns { contestantId: "YYYY-MM-DD HH:MM:SS" }.
+   222→- handleMyVotes_ response now also includes a `timestamps` field (backward compatible — `votes` shape unchanged).
+   223→- upsertVote_ save response now also returns `timestamp` so the frontend can show "just now" immediately.
+   224→- Added 3 new tests: MYVOTES-TS-1 (timestamps present + format), MYVOTES-TS-2 (timestamps update on score change, still one row), SAVE-TS-1 (save response includes timestamp). Total: 43/43 PASS.
+   225→
+   226→NEW FRONTEND FEATURES (index.html):
+   227→- Export menu (dropdown): Print / PDF (uses @media print stylesheet), Download CSV, Download JSON. All produce real downloadable blobs with the judge's own scores + timestamps.
+   228→- Keyboard shortcuts overlay (press `?` to toggle): lists all shortcuts; close with Esc or click-outside.
+   229→- Global keyboard handler: `/` focus search, `Esc` close/clear, `t` theme, `u` unscored-only, `r` refresh, `s` save focused card, `1-5` fill preset chip on focused card, `?` toggle shortcuts overlay.
+   230→- Arrow Up/Down on score input steps ±1 (in addition to existing stepper buttons).
+   231→- Undo last save: when a save updates an existing value, the success toast offers an "Undo" action button that re-saves the previous value (re-uses saveVote endpoint — never deletes; inserts have no undo since there's no previous value to revert to). undoStack capped at 10 entries.
+   232→- Auto-save toggle (opt-in): 2s debounce after typing; only fires when value differs from saved; shows info-blue border ring on inputs when ON; toast confirms toggle. Pending timers are cancelled on logout or toggle-off.
+   233→- Per-card relative timestamp: "Updated just now / 2m ago / 1h ago / 3d ago". Auto-refreshes every 30s.
+   234→
+   235→STYLING IMPROVEMENTS:
+   236→- @media print stylesheet: hides chrome (header, toolbar, footer, toasts, save buttons, chips, stepper, hint) and renders a clean black-on-white card list with page-break-inside avoidance. Works in both light and dark themes (forces white background for print).
+   237→- Subtle background dot pattern (radial-gradient) for visual texture.
+   238→- focus-visible outlines on all interactive elements (accessibility).
+   239→- Dropdown menu with slide-in animation.
+   240→- Toast with action button slot (for Undo).
+   241→- Relative-timestamp element styling with ◷ icon.
+   242→- Keyboard shortcuts overlay with kbd-styled key chips and dashed separators.
+   243→- Auto-save indicator ring on score inputs when enabled.
+   244→
+   245→BROWSER E2E VERIFICATION (all passed):
+   246→- Shortcuts overlay: opens with `?` key, screenshot captured, closes with `Esc`.
+   247→- Save+Undo: insert C001=85 (toast "Saved" no undo), update to 90 (toast with Undo), click Undo → value reverts to 85, server confirms {"C001":85}.
+   248→- Auto-save: toggle ON, type 77 → badge stays "Not scored" immediately, after 2.5s badge becomes "✓ Saved", server confirms {"C001":77,"timestamps":{...}}.
+   249→- Export CSV: dropdown opens, CSV downloaded with header + 4 rows (C001=77 with timestamp, others empty), correct CSV format with quoted names.
+   250→- Export JSON: JSON downloaded with judgeId, judgeName, exportedAt ISO timestamp, contestants array with id/name/score/timestamp.
+   251→- Keyboard shortcuts: `/` focuses search, `Esc` clears search, `t` toggles theme (light→dark), `3` fills 3rd preset (51) on focused card.
+   252→- Per-card timestamp: shows "Updated just now" after save, auto-refreshes.
+   253→- Round-trip regression: save 85 → update 90 → reload → "C001=90 badge=✓ Saved ts=Updated just now", server {"C001":90,"timestamps":{"C001":"..."}}.
+   254→- Sticky footer on login screen: gap=0, footerBottom==viewport=844.
+   255→- No JS console errors throughout.
+   256→
+   257→BUGS FOUND AND FIXED:
+   258→- None in the app. All features worked first try.
+   259→
+   260→Stage Summary:
+   261→- 43/43 tests pass (40 from round 1 + 3 new timestamp tests).
+   262→- All round-2 features verified in-browser with no regressions.
+   263→
+   264→Recommended next phase:
+   265→- Optional: organizer dashboard route (read-only aggregate view when SHOW_LIVE_RESULTS=true), judge notes/comments per contestant (would need backend column addition), batch scoring via CSV upload, real-time multi-judge progress indicator (anonymized count of judges who've completed).
+   266→
+   267→---
+   268→Task ID: 30 (webDevReview round 3)
+   269→Agent: webDevReview
+   270→Task: QA baseline + new features (organizer view, judges-progress, dist-chart, card collapse, theme auto-detect) + styling.
+   271→
+   272→Work Log:
+   273→- Read worklog; project stable at 43/43 tests from round 2.
+   274→- QA baseline: 43/43 tests passed, browser smoke clean.
+   275→
+   276→NEW BACKEND FEATURES (Code.gs, 595→665 lines):
+   277→- New helper countJudgesCompleted_() — counts active judges who've scored every active contestant (anonymized; never exposes judge IDs).
+   278→- New helper getActiveJudgeIds_() — internal-only list of active judge IDs (never exposed via public endpoint).
+   279→- New helper getResultsBreakdown_() — returns per-contestant aggregate { contestantId, name, total, count, average, rank } sorted by total desc with ties sharing ordinal rank.
+   280→- status endpoint now also returns judgesCompleted (anonymized counter).
+   281→- results endpoint (when SHOW_LIVE_RESULTS=true) now also returns breakdown array + judgesCompleted + activeJudges. Existing results field (totals) unchanged for backward compat.
+   282→- Added 3 new tests: STATUS-2 (judgesCompleted transitions 0→1→2 as judges complete), RESULTS-4 (breakdown has rank/count/avg, no judge IDs leaked), RESULTS-5 (sorted desc, ties share rank). Total: 46/46 PASS.
+   283→
+   284→NEW FRONTEND FEATURES (index.html, 2055→~2500 lines):
+   285→- Tab bar (Judging / Results) above the dashboard — switches between judge and organizer views.
+   286→- Organizer view (#orgView or #organizer URL hash): aggregate results table with rank, contestant name+ID, total, judge count, average. Medal icons (🥇🥈🥉) for top 3. Summary tiles: judges finished, total votes cast, contestants ranked, top average. Shows "🔒 Results are hidden until voting closes." when SHOW_LIVE_RESULTS=false. Respects URL hash on load and on hashchange.
+   287→- Anonymous judges-progress indicator in dashboard header: "X of Y judges finished scoring" with a progress bar. Only shown when activeJudges > 1. Refreshes after each save.
+   288→- Score distribution mini-chart: 5-quintile bar chart of the judge's own scores, with hover tooltips ("N scores") and quintile-boundary labels. Hidden when no scores yet.
+   289→- Card collapse: scored cards get a chevron collapse button; collapsed cards show only name + score + badge, hiding the input/chips/hint. Collapse state stored per-session. Collapse controls are added dynamically when a card transitions from unscored to saved (via new ensureCollapseControls helper).
+   290→- Theme auto-detect: on first visit (no localStorage), respects prefers-color-scheme: dark.
+   291→- Keyboard shortcuts: j switches to Judging tab, o switches to Results tab. Overlay updated to list these.
+   292→
+   293→STYLING IMPROVEMENTS:
+   294→- Judges-progress indicator with icon + num + gradient bar.
+   295→- Dist-chart with gradient bars, hover tooltips, empty-bar styling, quintile labels.
+   296→- Card collapse: chevron rotation animation, collapsed card layout (compact), collapse-summary score display.
+   297→- Organizer view: org-card with gradient accents, summary tiles, sticky table header, hover row highlight, zebra striping, rank column with medals, numeric tabular-nums alignment.
+   298→- Tab bar with active state gradient, hover states.
+   299→- focus-visible outlines on collapse buttons and tab buttons.
+   300→
+   301→BROWSER E2E VERIFICATION (all passed):
+   302→- Score all 4 contestants → judges-progress shows "1/2", progress bar COMPLETE, celebration SHOWN then auto-hidden.
+   303→- Dist-chart bars correct for scores 85,92,70,100 (buckets computed correctly).
+   304→- Card collapse button PRESENT after insert (fix verified); collapse toggles score-row display none/block, summary display block/none.
+   305→- Round-trip: reload → all 4 scores persisted (85,92,70,100); server confirms with timestamps.
+   306→- Organizer view with SHOW_LIVE=true: summary tiles "1/2 judges finished | 6 votes cast | 4 ranked | 95 top avg"; table ranked C005(190,2,95)→C001(180,2,90)→C004(80,1,80)→C002(70,1,70) with medals; NO judge IDs leaked ("clean").
+   307→- Organizer view with SHOW_LIVE=false (default): shows "🔒 Results are hidden until voting closes."
+   308→- Theme auto-detect: prefers-dark → dark theme; prefers-light → light theme.
+   309→- Tab switching: Judging ↔ Results works via clicks, keyboard (j/o), and URL hash.
+   310→- No JS console errors throughout.
+   311→
+   312→BUGS FOUND AND FIXED:
+   313→1. judges-progress showed stale count after save — FIXED by calling loadStatusAndContestants() after each successful save to re-fetch the anonymized judgesCompleted counter.
+   314→2. Card collapse button missing when a card transitioned from unscored to saved (only present at initial render) — FIXED by adding ensureCollapseControls() helper that dynamically injects the collapse button + collapse-summary span into the card's header after an insert save. Idempotent.
+   315→
+   316→Stage Summary:
+   317→- 46/46 tests pass (43 from round 2 + 3 new).
+   318→- All round-3 features verified in-browser with no regressions.
+   319→- Both bugs fixed and verified.
+   320→
+   321→Recommended next phase:
+   322→- Optional: per-contestant comparison mode (show judge's score next to group average when SHOW_LIVE_RESULTS=true), CSV batch upload for organizers, real-time poll (auto-refresh status every N seconds), judge notes/comments (would need backend column addition — breaks spec's 4-column Votes sheet, so skip), export results to CSV/PDF for organizers.
+   323→
+   324→---
+   325→Task ID: 40 (webDevReview round 4)
+   326→Agent: webDevReview
+   327→Task: QA baseline + new features (auto-refresh, connection dot, compare mode, export results CSV, density toggle) + styling.
+   328→
+   329→Work Log:
+   330→- Read worklog; project stable at 46/46 tests from round 3.
+   331→- QA baseline: 46/46 tests passed, browser smoke clean.
+   332→
+   333→NEW FRONTEND FEATURES (index.html, 2541→~2940 lines):
+   334→- Real-time auto-refresh: polls status + myVotes every 30s. Detects voting-open flip → toast ("Voting is now OPEN/CLOSED"). Detects contestant count change → re-fetches + re-renders. Detects judge-name change → updates header. Skips myVotes poll when there are unsaved input changes (to avoid clobbering). Refreshes comparison data when compare mode is on.
+   335→- Sync indicator in dashboard header: "Synced just now / Xs ago / Xm ago" with a dot that turns into a spinner while polling. Updates every 5s.
+   336→- Connection status dot in topbar: green when online, red+blink when offline. Uses navigator.onLine + online/offline events.
+   337→- Compare mode (opt-in toggle, `c` shortcut): when SHOW_LIVE_RESULTS=true, fetches the results breakdown and shows a "📊 Group avg X" badge on each card next to the score input. Toggle is disabled (greyed) when results are hidden. Turning off removes all badges. Respects the spec's privacy: only aggregates, never per-judge.
+   338→- Export results to CSV (organizer, Results tab): downloads the rankings table as results.csv with columns Rank, Contestant ID, Contestant Name, Total Score, Judges Count, Average. Button is disabled when SHOW_LIVE_RESULTS=false.
+   339→- Card density toggle (Comfortable / Compact): compact mode reduces padding/gaps, hides hints + timestamps, smaller inputs/buttons. Persisted to localStorage (jv_density). Loaded on login.
+   340→- Organizer view now has its own Refresh button (re-fetches results without full page reload).
+   341→- Keyboard shortcut `c` toggles compare mode; shortcuts overlay updated.
+   342→
+   343→STYLING IMPROVEMENTS:
+   344→- Connection dot with pulsing offline animation.
+   345→- Sync indicator with spinner-during-poll state.
+   346→- Compare badge: pill with info color, 📊 icon, tabular-nums.
+   347→- Density toggle: segmented control with active state.
+   348→- Organizer view: dash-title layout with refresh + CSV buttons.
+   349→
+   350→BROWSER E2E VERIFICATION (all passed):
+   351→- Density toggle: comfortable→compact changes body class; persists after reload.
+   352→- Sync indicator: visible immediately after login ("Synced just now ago"); updates to "Xs ago".
+   353→- Connection dot: green/ONLINE when navigator.onLine.
+   354→- Compare toggle: DISABLED when SHOW_LIVE_RESULTS=false; ENABLED when true.
+   355→- Compare mode ON: 2 badges appear (C001 "Group avg 90" = (85+95)/2; C002 "Group avg 75" = (70+80)/2). Turning OFF removes all badges.
+   356→- Export results CSV: downloads results.csv with correct rows (rank, id, name, total, count, average). Button disabled when SHOW_LIVE=false.
+   357→- Voting-flip detection: simulated previous=closed, pollOnce fetched status=open, detected flip, toast "Voting is now OPEN — you can save scores.", pill re-updated.
+   358→- Round-trip regression: save 88 → reload → C001=88, server confirms {"C001":88} with timestamp.
+   359→- Sticky footer on login: gap=0.
+   360→- No JS console errors throughout.
+   361→
+   362→BUGS FOUND AND FIXED:
+   363→1. Sync indicator hidden for first 5s after login — FIXED by calling renderSyncIndicator() immediately in startAutoRefresh() instead of waiting for the first interval tick.
+   364→2. Compare toggle stayed disabled even with SHOW_LIVE_RESULTS=true — FIXED by adding the enable/disable logic to loadStatusAndContestants() (initial load), not just pollOnce (periodic refresh). Previously the toggle only became enabled after the first 30s poll.
+   365→
+   366→Stage Summary:
+   367→- 46/46 tests pass (unchanged — no backend changes this round).
+   368→- All round-4 features verified in-browser with no regressions.
+   369→- Both bugs fixed and verified.
+   370→
+   371→Recommended next phase:
+   372→- Optional: per-contestant comparison mode (show judge's score vs group average inline), CSV batch upload for organizers to seed contestants/judges, judge session timeout warning, accessibility audit (ARIA roles, screen reader testing), PWA manifest for installability, offline support via service worker (cache the static shell).
+   373→
+   374→---
+   375→Task ID: 50 (webDevReview round 5)
+   376→Agent: webDevReview
+   377→Task: QA baseline + new features (avatars, top picks, session timeout, onboarding tour, PWA) + styling polish.
+   378→
+   379→Work Log:
+   380→- Read worklog; project stable at 46/46 tests from round 4.
+   381→- QA baseline: 46/46 tests passed. Browser smoke: login (JUDGE-01/sharedpw), round-trip save 85→90→reload persisted, session restore across reload, dark mode, organizer tab, sticky footer (footerBottom==viewport when scrolled to end), zero console errors. No bugs found — proceeded to new features.
+   382→
+   383→NEW FEATURES (all frontend; Code.gs untouched at 705 lines):
+   384→1. Contestant avatars — colored initial circles in each card header. Deterministic hue per contestant ID (murmur-style avalanche hash), ring turns green when scored, scales down in compact density. Judge avatar chip (initials + hue from judge name) in the dashboard header, updated by setJudgeIdentity() at all 3 name-update sites (enterDashboard, handleRefresh, pollOnce).
+   385→2. Top picks — 🥇🥈🥉 medal chips showing the judge's own top-3 highest scores, live-updating after each save (renderTopPicks called from refreshStats). Hidden until ≥2 scored.
+   386→3. Session timeout — 20 min inactivity → warning modal with SVG countdown ring (turns red ≤10s), "Stay signed in" / "Log out now"; auto-logout on countdown end via performLogout('timeout'). Activity listeners (click/keydown/touchstart/visibilitychange + throttled mousemove). window.__setIdleTimers() test hook.
+   387→4. Onboarding tour — 6-step spotlight tour (welcome → progress → stats → toolbar → score card → tabs/shortcuts) with box-shadow spotlight cutout, clamped tooltip positioning, progress dots, Back/Next/Skip, keyboard nav (Enter/←/→/Esc). Auto-starts once on first login (jv_tour_done localStorage flag); replay via Export → "Restart guided tour". Tour teardown on logout.
+   388→5. PWA — manifest.webmanifest + sw.js + icon.svg/icon-maskable.svg (hand-drawn SVG ballot/checkmark/gavel mark). SW: network-first for navigation, cache-first for shell assets, NEVER touches API requests (POST, /api, ?action=, /exec). Registration guarded to https/localhost, silently ignores failures. Offline verified: app shell loads with network off, login screen shown since session-restore API correctly fails; online recovery re-login works.
+   389→6. Password visibility toggle on login (eye icon, aria-pressed).
+   390→7. Logout refactored: handleLogout (confirm guard) → performLogout(reason) reused by timeout auto-logout; resets pw toggle state.
+   391→8. Keyboard shortcut `d` toggles density; shortcuts overlay updated.
+   392→9. Clear-filters button in the empty search state (resets search + unscored filter).
+   393→
+   394→STYLING IMPROVEMENTS:
+   395→- Card left-edge accent insets (border color by status: grey default, green saved, red error; survives hover).
+   396→- Animated stat count-up (rAF, cubic ease-out) + statPop scale animation; Σ/▲/▼/◷ glyphs in stat tiles; skips under prefers-reduced-motion.
+   397→- Brand gradient text (teal→amber) in topbar.
+   398→- Themed thin scrollbars (webkit + firefox scrollbar-color).
+   399→- prefers-reduced-motion media query (kills animations/transitions/confetti shimmer).
+   400→- Print stylesheet extended (hides tour layer, timeout overlay, judge avatar).
+   401→- Tour/timeout/modal polish: dashed progress dots, kbd chips in tour copy, urgent ring color, focus on primary buttons.
+   402→
+   403→TOOLING:
+   404→- mock-server.js now serves /manifest.webmanifest, /sw.js, /icon.svg, /icon-maskable.svg with correct content types (mirrors a real static host).
+   405→- README.md updated: new features list, Files table, deployment notes for PWA files.
+   406→
+   407→BUGS FOUND AND FIXED (both found by self-review/VLM QA during this round):
+   408→1. Avatar hues nearly identical for consecutive IDs (C001→302, C002→303, C004→305, C005→306) because the last char dominated the modulo hash — FIXED with a murmur-style avalanche finalizer ((h^(h>>>16)) → imul → xor → imul → xor, all >>>0). Verified spread: 0/314/138/336.
+   409→2. Signed-32-bit leak: Math.imul+xor produced negative hues — FIXED with explicit >>>0 normalization after each xor step.
+   410→3. animateNum self-cancel: setting textContent before calling animateNum made from==to (no animation) and Number(null)=0 would misrender nulls — FIXED by removing the direct assignments and null-guarding inside animateNum.
+   411→
+   412→BROWSER E2E VERIFICATION (all passed):
+   413→- Login → tour auto-starts (step 1/6 "Welcome"), advanced through all 6 steps via clicks, Finish sets jv_tour_done=1 + toast. Re-login: tour does NOT restart. Replay via Export menu works; spotlight positioned over .progress-wrap (210,211 860x46), tooltip below.
+   414→- Session timeout (test hook 3s/5s): warning modal appears with countdown ticking 4→3...; "Stay signed in" hides modal and keeps session; armed 2.5s/3s → auto-logout returns to login screen.
+   415→- Avatars: initials JD/MS/AG/LM with distinct hues (0/314/138/336); scored ring after save; judge avatar "JO" next to "· Judge One".
+   416→- Top picks after scoring 85/92/100: 🥇Liza Mendoza 100, 🥈Maria Santos 92, 🥉Juan Dela Cruz 85; stats avg 92.3, hi 100, rem 1.
+   417→- PWA: manifest+sw+icons serve 200; navigator.serviceWorker registrations = 1; offline reload serves shell from cache; online re-login restores scores.
+   418→- Password toggle: click → type=text + aria-pressed=true; click again → password.
+   419→- `d` shortcut toggles density-compact class + active button; search "zzzz" → empty state with Clear-filters button → click restores 4 cards.
+   420→- VLM visual QA: card close-up confirms avatars render in distinct colors (AG green, JD red, MS magenta, LM pink) + green left accent on saved cards; tour spotlight screenshot confirms tooltip layering clean, no overlapping text.
+   421→- Round-trip regression: 85→88→reload→"88 ✓ Saved Updated just now", server myVotes confirms {"C001":88,"C002":92,"C005":100} with timestamps.
+   422→- Zero JS console errors / page errors throughout.
+   423→
+   424→Stage Summary:
+   425→- 46/46 unit tests pass (unchanged — no backend changes this round).
+   426→- index.html: 2940 → 3641 lines. New files: manifest.webmanifest, sw.js, icon.svg, icon-maskable.svg.
+   427→- All round-5 features verified in-browser with no regressions.
+   428→- Known notes: SW is a progressive enhancement (app fully functional without it); tour auto-start requires localStorage (private-mode users can replay from menu); session timeout is frontend-only (shared-secret model unchanged).
+   429→
+   430→Recommended next phase:
+   431→- Optional: CSV batch upload for organizers to seed contestants/judges, judge notes/comments per contestant (needs backend column), organizer live-results auto-refresh, sound effects toggle, ARIA/screen-reader audit, localization (fil/es).
+   432→
+   433→---
+   434→Task ID: 60 (webDevReview round 6)
+   435→Agent: webDevReview
+   436→Task: QA baseline + bugfix (organizer stale data) + new features (live results polling, Enter-to-next, range bars, copy TSV) + polish.
+   437→
+   438→Work Log:
+   439→- Read worklog; project stable at 46/46 tests from round 5.
+   440→- QA baseline: 46/46 tests passed. Browser smoke: login, session restore, save/update round-trip (85→90→89), upsert no-duplicates, dark mode, search + empty state, keyboard shortcuts (?, /, Esc, t), organizer view.
+   441→- INFRA FIX (sandbox-only): Chrome in this sandbox can only reach ports 3000/81 (Caddy gateway). Patched test/mock-server.js to (a) bind explicitly to 0.0.0.0 so Caddy's IPv4 proxy can reach it, and (b) rewrite the served API_URL to http://localhost:81/api?XTransformPort=8788 so the sandboxed browser's API calls route through the gateway. Also switched to start-stop-daemon for a persistent background server (plain `&` processes were being killed between bash calls). E2E URL is now http://localhost:81/?XTransformPort=8788.
+   442→
+   443→BUG FOUND AND FIXED:
+   444→1. Organizer view showed stale data when navigating back via location.hash='#organizer' or the tab buttons — switchTab only fetched results when state.orgLoaded was false, so the first (possibly stale) load persisted for the whole session. FIXED by making switchTab always call loadOrganizerView() when the organizer tab becomes visible, plus start/stop of a 15s auto-poll timer (state.orgPollTimer) managed in switchTab/performLogout.
+   445→
+   446→NEW FEATURES (all frontend; Code.gs untouched at 705 lines):
+   447→1. Organizer live results — while the Results tab is visible, results re-fetch every 15s (skips when document.hidden). A pulsing "LIVE · Xs ago" pill (orgLiveIndicator) sits in the org header and ticks via renderSyncIndicator's 5s interval. Polls are "silent" (loadOrganizerView(true)) so the table doesn't flash a loading state. Timer is cleaned up on tab switch away and logout.
+   448→2. Enter-to-save-and-next — Enter in a score input now calls onSaveClick(cid, {viaKeyboard:true}); after a successful save, focusNextUnscored(cid) scrolls the next unscored card into view (wrap-around search), focuses + selects its input, and plays a 1.2s teal jumpRing highlight animation. Judges can score the entire roster keyboard-only. Shortcuts overlay + tour copy + card hint updated to document the flow.
+   449→3. Score position mini-bar — each card gets a slim range-bar under the score input: min/max labels, track, and a gradient fill whose width = (score-min)/(max-min) and color follows the heat class (red/amber/green). Updates live on input/chip/stepper changes; hidden when card is collapsed, in compact density, and in print. Helpers: rangePct(), updateRangeBar().
+   450→4. Copy results to clipboard (organizer) — new Copy button next to CSV copies the rankings as TSV (Rank/ID/Name/Total/Judges/Average, tab-separated) via navigator.clipboard.writeText with an execCommand textarea fallback; enables/disables in lockstep with the CSV button; toast confirms row count.
+   451→5. Stat tile tooltips — title attributes on Average/Highest/Lowest/Remaining tiles.
+   452→
+   453→STYLING IMPROVEMENTS:
+   454→- .org-live pill: card-soft bg, green pulsing dot (orgLivePulse keyframes), tabular-nums, transitions; hidden in print.
+   455→- .range-bar: 5px track with border, gradient fills per heat class, cubic-bezier width transition; range-min/max micro-labels.
+   456→- .card.jump-ring: teal border + expanding box-shadow ring animation for the Enter-jump feedback.
+   457→- .dist-labels: 9px→10px, weight 600→700, tabular-nums, brighter dark-mode color (#b6c2d4) — addresses VLM contrast feedback from round 5.
+   458→- Shortcuts overlay row updated: "Save focused score & jump to next unscored".
+   459→
+   460→BROWSER E2E VERIFICATION (all passed):
+   461→- Enter-chain scoring as JUDGE-02: type 85 + Enter → C001 saved, focus jumps to C002 with ring; 92 → C004; 70 → C005; 100 → all scored, celebration shows then auto-hides. Server confirms {C001:85, C002:92, C004:70, C005:100} with timestamps. Zero mouse clicks needed.
+   462→- Range bar: input 50 → fill 49% heat-mid; 88 → 88% heat-high; persists correctly after reload (C001 85%, C002 92%, C004 95%, C005 49%); display:none when card collapsed and when compact density; restored on uncollapse/comfortable.
+   463→- Organizer live refresh: changed JUDGE-02/C005 to 50 via debug endpoint while on Results tab → within 16s the table reshuffled (Maria 1st 184, Liza 150) and Top average dropped 100→92 with no manual refresh; LIVE pill ticked "just now" → "12s ago".
+   464→- Hash re-entry: changed C004 to 95 while away, hash back to #organizer → table immediately shows Ana Garcia 3rd (165, avg 82.5). LIVE shows "just now".
+   465→- Copy TSV: intercepted clipboard.writeText — exact TSV with header + 4 rows, tab-separated, correct ranks.
+   466→- Undo regression: 88→90→undo→88. Search "Ana"→1 card; unscored filter→0; export menu opens; sticky footer gap=0 at scroll end; mobile 390px no horizontal overflow.
+   467→- Zero JS console errors throughout all flows.
+   468→
+   469→VLM VISUAL QA:
+   470→- Organizer view w/ LIVE pill + Refresh/Copy/CSV row: "well aligned", no issues.
+   471→- Card close-up: range bar "very clean and well-integrated", contextual colors confirmed.
+   472→- Final dashboard: 8.5/10 "highly polished, production-ready".
+   473→- Mobile 390px: no overflow; celebration auto-hides (display:none verified).
+   474→
+   475→Stage Summary:
+   476→- 46/46 unit tests pass (backend unchanged).
+   477→- index.html: 3641 → 3896 lines. README updated with 5 new feature bullets.
+   478→- 1 real bug fixed (stale organizer data) + 4 new features + styling polish.
+   479→- Sandbox E2E access pattern now documented: mock server on 0.0.0.0:8788, browse via http://localhost:81/?XTransformPort=8788.
+   480→
+   481→Recommended next phase:
+   482→- Optional: CSV batch upload for organizers to seed contestants/judges (needs backend), judge notes/comments (needs backend column), sound effects toggle, ARIA/screen-reader audit, localization (fil/es), share-to-chat result card image export.
+   483→

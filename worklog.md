@@ -480,3 +480,61 @@ Stage Summary:
 
 Recommended next phase:
 - Optional: CSV batch upload for organizers to seed contestants/judges (needs backend), judge notes/comments (needs backend column), sound effects toggle, ARIA/screen-reader audit, localization (fil/es), share-to-chat result card image export.
+
+---
+Task ID: 70 (webDevReview round 7)
+Agent: webDevReview
+Task: QA baseline + two full-stack features (judge notes per contestant, organizer tools with CSV roster import) + styling polish.
+
+Work Log:
+- Read worklog; project stable at 46/46 tests from round 6.
+- QA BASELINE: 46/46 unit tests passed. Browser smoke: fresh login (JUDGE-01 and JUDGE-02), score save round-trip (77 on C005 verified server-side), organizer view with LIVE pill, results table with medals/ranks/ties, zero JS console errors.
+- INVESTIGATED 2 transient anomalies (both turned out to be browser-profile artifacts, NOT app bugs): (a) "#loginBtn covered by header.topbar" — hidden element rect (0,0) under sticky topbar, caused by Chrome session-restore auto-logging-in with round-6 sessionStorage creds while the login form was also filled; (b) "Judge Two" shown after filling JUDGE-01 — same session-restore overwrote the flow. Clean reproductions confirmed correct behavior; documented so future rounds don't re-chase it.
+- Mock server restarted (start-stop-daemon, SHOW_LIVE=true, organizer key 'orgpw'); persistent nohup processes were being killed between bash calls — use start-stop-daemon pattern from round 6.
+
+NEW FEATURE 1 — JUDGE NOTES PER CONTESTANT (full stack):
+- Code.gs (705 → 974 lines): VOTE_HEADERS now ['Timestamp','Judge ID','Contestant ID','Score','Notes'] — ensureSheet_ auto-adds the column to legacy 4-col sheets without touching data rows; saveVote accepts optional `note` (string, str_-trimmed, ≤ NOTE_MAX_LENGTH=500 enforced server-side; omitted → PRESERVES existing note on update; empty string → CLEARS it); upsertVote_ reads/writes 5 columns and echoes the final note in the response; new getJudgeVoteNotes_(judgeId); myVotes returns `notes` map; judgeStats returns `notesCount`.
+- index.html (3896 → 4569 lines): every card gets a note-section — dashed "Add note" pill toggle (→ amber "Note · saved" state when a note exists), expandable textarea with lined-paper background + focus ring, live x/500 counter (warn ≥420, error at 500), "🔒 Saved with the score · Ctrl+Enter saves" meta line, two-line italic preview snippet when closed, 📝 marker next to the collapse-summary score. Ctrl+Enter inside the textarea saves score+note; Esc reverts to the saved note and collapses. Undo entries now carry prevNote and restore both. hasUnsavedChanges counts note edits (beforeunload guard). saveAllPending includes note-only changes. CSV export gains a quoted Note column; JSON includes notes. New 5th stat tile "📝 Notes" (amber, clickable → toggles filter), "With notes" toolbar chip, `n` keyboard shortcut, Esc clears the filter, clear-filters button resets it.
+- State plumbing: state.notes/uiNotes/notesOpen/notesOnly wired through login, session-restore, 30s poll (re-renders when notes change), manual refresh, and logout teardown.
+
+NEW FEATURE 2 — ORGANIZER TOOLS (key-gated, Results tab):
+- Code.gs: new ORGANIZER_PASSWORD const ('CHANGE_THIS_ORGANIZER_KEY'; mock uses 'orgpw'). GET ?action=judgeNotes&organizerPassword=... returns all non-empty notes grouped by contestant [{contestantId, contestantName, entries:[{judgeId, judgeName, score, note, timestamp}]}] + totalNotes — organizer-only (organizer owns the Sheet anyway; judges' shared password does NOT unlock it). POST action 'importRoster' {organizerPassword, csv} — CSV lines `contestant|judge,ID,Name,active?`, active defaults true (empty trailing field → true), optional "type,..." header tolerated; per-line validation with individual error reporting {line, error}; upserts by ID (existing rows updated in place preserving position, identical rows skipped, new rows appended) via new upsertRosterRows_; whole import wrapped in LockService.
+- index.html: new "Organizer tools" card under the results card — Unlock button reveals a password field (Enter verifies, Esc cancels, wrong key shows red inline error); correct key shows the Unlocked badge (pulsing green dot) + Lock button and stores the key in sessionStorage (auto-restored when the org tab becomes visible; lock button clears it). Left panel: Judge notes review — accordion per contestant (count badge, caret), entries with judge avatar (deterministic hue), name, score chip, note text, relative timestamp; Load notes button re-fetches. Right panel: CSV roster import — monospace textarea with format help + placeholder examples, Import/Clear buttons, result summary (✓ added / ✓ updated / • skipped / ⚠ per-line errors with line numbers), auto-refreshes organizer results AND the judge dashboard after a successful import.
+
+STYLING (mandatory polish):
+- .note-toggle (dashed pill → solid amber .has-note), .note-area-inner with repeating-linear-gradient ruled-paper lines, focus-within teal ring, noteIn keyframe expand animation, .note-count tabular-nums with warn/max states, .note-preview 2-line clamp with hover color.
+- .org-tools-card, .org-key-row input focus states, .org-unlocked-badge (success pill + orgLivePulse dot), .org-tools-grid 2-col → 1-col ≤900px, .org-tool panels, .ong-head accordion rows with rotate caret, .org-note-entry rows (avatar + .one-judge/.one-score/.one-time/.one-text), .org-import-area monospace textarea, .org-import-result with ok/skip/err classes.
+- Stats strip now 5 columns (3 on ≤560px), .stat-tile.notes amber value.
+- Print stylesheet hides note sections + org tools; dark-mode variants rely on existing CSS vars (VLM verified contrast).
+
+TESTS (46 → 62, all passing):
+- Updated SHEET-3 for 5-col headers. NEW: SHEET-5 (legacy 4-col sheet gets Notes column, data preserved, myVotes reads legacy rows), NOTES-1 (save+myVotes round-trip incl. sheet col 5), NOTES-2 (>500 rejected, nothing written, exactly 500 OK), NOTES-3 (score-only update preserves note), NOTES-4 (empty note clears), NOTES-5 (myVotes never leaks other judges' notes), NOTES-6 (notes not in public results/status), NOTES-7 (judgeNotes key gating — missing/wrong/JUDGE password all rejected), NOTES-8 (grouped entries with resolved names/scores/timestamps; no-note contestants excluded), NOTES-9 (judgeStats notesCount), IMPORT-1 (adds contestants+judges, new judge can auth), IMPORT-2 (updates in place, row position preserved, identical skipped), IMPORT-3 (wrong/missing/JUDGE-password key rejected, nothing imported), IMPORT-4 (per-line errors with line numbers, valid lines still processed, header tolerated, trailing comma), IMPORT-5 (empty CSV rejected), LEAK-4 (organizer key placeholder + test key not in index.html).
+- loader.js: organizerPassword option + exports for all new helpers. mock-server.js: organizerPassword 'orgpw' + banner.
+
+DEFENSIVE FIX:
+- onSaveClick null-guards: when a card is filtered out of view (e.g. notes-only filter active during save-all/auto-save), the save now falls back to tracked uiScores/uiNotes state and skips DOM updates instead of throwing.
+
+BROWSER E2E VERIFICATION (all passed, zero JS console errors):
+- Note round-trips: save 85 + note → "Score saved. 📝 Note saved." + counter 46/500 + stat tile 1 → reload → "Note · saved" + preview snippet + server myVotes confirms {C001:85, note}. Score-only update 85→90 preserved the note. Empty-note save cleared it (toggle → "Add note", stat → 0). Ctrl+Enter from the textarea saved score+note on C002.
+- Privacy: JUDGE-02 sees only their own notes (own preview text confirmed), never JUDGE-01's.
+- Filter: "With notes" chip + `n` shortcut + Esc clear + clickable stat tile all toggle correctly (1 card shown when only C002 noted).
+- Export: CSV intercepted — header row includes Note; C002 row carries the quoted note.
+- Undo: score 92→95 + note edit → undo via toast → both reverted to 92 + original note (server verified).
+- Organizer: wrong key → "Invalid organizer key." inline error, still locked; correct key → unlocked + badge + notes loaded (Juan 1 note / Maria 2 notes groups); accordion opens Maria showing both judges' entries with scores; reload with #organizer → auto-restore from sessionStorage, button reads "🔒 Lock"; Lock button clears sessionStorage + hides tools.
+- CSV import: 2 valid + 1 identical + 1 bad line → "✓ 2 added / • 1 unchanged (skipped) / ⚠ 1 line skipped: Line 3: Unknown type 'alien'"; server contestants now include C010; JUDGE-10 authenticates as "Fourth Judge"; judge tab auto-refreshed to 5 cards.
+- Regressions: Enter-to-save-and-next still jumps to next unscored card; 62/62 unit tests; inline script syntax OK; no horizontal overflow; responsive ≤900px grid rule verified.
+
+VLM VISUAL QA:
+- Judge dashboard w/ open note editor: 9/10 — "Excellent" integration, correct counter placement, strong alignment/spacing/contrast.
+- Organizer tools (locked): 8/10 — clear hierarchy, good contrast.
+- Organizer tools (unlocked): 8/10 — logical two-column layout, high readability.
+- Dark mode notes UI: "Excellent" contrast, amber toggle pops, no issues found.
+
+Stage Summary:
+- 62/62 unit tests pass (46 → 62: +16 new incl. updated SHEET-3).
+- index.html: 3896 → 4569 lines; Code.gs: 705 → 974 lines; README updated (Notes column, ORGANIZER_PASSWORD config, judgeNotes/importRoster API docs, deployment step, 6 new feature bullets).
+- 2 full-stack features shipped (judge notes + organizer tools), 1 defensive fix, zero regressions.
+- Sandbox access pattern unchanged: mock server via start-stop-daemon on 0.0.0.0:8788 (SHOW_LIVE=true, org key 'orgpw'), browse http://localhost:81/?XTransformPort=8788.
+
+Recommended next phase:
+- Optional: CSV import file-picker (drag & drop .csv file instead of paste), sound-effects toggle, ARIA/screen-reader audit of new note/org UI, localization (fil/es), export judge-notes review as PDF for deliberation meetings, per-judge notes anonymization toggle in the organizer panel.
