@@ -192,7 +192,9 @@ Returns active contestants only.
 
 ### `GET ?action=myVotes&judgeId=...&password=...`
 Authenticates the judge and returns `{ contestantId: score }` for that judge
-only, plus the judge's current name from the sheet.
+only, plus the judge's current name from the sheet, plus a `timestamps` field
+mapping `{ contestantId: "YYYY-MM-DD HH:MM:SS" }` for displaying "Updated 2m
+ago" per card.
 
 ### `GET ?action=judgeStats&judgeId=...&password=...`
 Authenticates the judge and returns their personal aggregate stats:
@@ -232,6 +234,13 @@ Validates in spec order, then upserts the vote inside a
   from saved scores
 - **Dark mode** toggle (persisted to localStorage)
 - **Mobile-first responsive** design with safe-area insets and sticky footer
+- **Export** menu — Print / PDF (clean print stylesheet), CSV, JSON of own scores
+- **Keyboard shortcuts** overlay (press `?`): `/` search, `Esc` clear, `t` theme,
+  `u` unscored-only, `r` refresh, `s` save focused card, `1-5` fill preset chip,
+  arrow keys to step score
+- **Undo last save** — toast action button reverts an update to the previous value
+- **Auto-save** (opt-in) — 2s debounce after typing; only fires when value differs
+- **Per-card relative timestamp** — "Updated 2m ago", auto-refreshes every 30s
 
 ---
 

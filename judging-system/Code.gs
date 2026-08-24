@@ -229,7 +229,13 @@ function handleMyVotes_(params) {
   if (!judge) return jsonOut_({ ok: false, error: 'Invalid or inactive Judge ID.' });
 
   var votes = getJudgeVotes_(judgeId);
-  return jsonOut_({ ok: true, judgeName: judge.name, votes: votes });
+  var timestamps = getJudgeVoteTimestamps_(judgeId);
+  return jsonOut_({
+    ok: true,
+    judgeName: judge.name,
+    votes: votes,
+    timestamps: timestamps
+  });
 }
 
 /**
@@ -440,6 +446,28 @@ function getJudgeVotes_(judgeId) {
 }
 
 /**
+ * Returns { contestantId: timestamp-string } for the given judge only.
+ * Used by the frontend to show "Updated 2m ago" per card.
+ * Backward-compatible addition — does not change the existing votes field.
+ */
+function getJudgeVoteTimestamps_(judgeId) {
+  var sheet = getSpreadsheet_().getSheetByName(SHEET_VOTES);
+  var last = sheet.getLastRow();
+  var ts = {};
+  if (last < 2) return ts;
+  var data = sheet.getRange(2, 1, last - 1, 4).getValues();
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    var jid = str_(row[1]);
+    var cid = str_(row[2]);
+    if (jid === judgeId && cid) {
+      ts[cid] = str_(row[0]);
+    }
+  }
+  return ts;
+}
+
+/**
  * Upsert a vote. MUST be called inside a LockService.getScriptLock().
  * Finds existing record matching Judge ID + Contestant ID.
  * If found, UPDATE in place (keeps the row, updates timestamp + score).
@@ -473,6 +501,7 @@ function upsertVote_(judgeId, contestantId, score) {
       action: 'updated',
       contestantId: contestantId,
       score: score,
+      timestamp: timestamp,
       judgeName: judge ? judge.name : ''
     };
   } else {
@@ -484,6 +513,7 @@ function upsertVote_(judgeId, contestantId, score) {
       action: 'inserted',
       contestantId: contestantId,
       score: score,
+      timestamp: timestamp,
       judgeName: judge2 ? judge2.name : ''
     };
   }

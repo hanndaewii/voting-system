@@ -207,3 +207,59 @@ Stage Summary:
 
 Recommended next phase:
 - Optional: "Export my scores" (printable/PDF view), keyboard shortcut overlay, undo-last-save, organizer dashboard route (read-only aggregate view when SHOW_LIVE_RESULTS=true).
+
+---
+Task ID: 20 (webDevReview round 2)
+Agent: webDevReview
+Task: QA baseline + new features (export, undo, auto-save, keyboard shortcuts, timestamps) + styling.
+
+Work Log:
+- Read worklog; project stable at 40/40 tests from round 1.
+- QA baseline: 40/40 tests passed, browser smoke clean.
+
+NEW BACKEND FEATURES (Code.gs):
+- New helper getJudgeVoteTimestamps_(judgeId) returns { contestantId: "YYYY-MM-DD HH:MM:SS" }.
+- handleMyVotes_ response now also includes a `timestamps` field (backward compatible — `votes` shape unchanged).
+- upsertVote_ save response now also returns `timestamp` so the frontend can show "just now" immediately.
+- Added 3 new tests: MYVOTES-TS-1 (timestamps present + format), MYVOTES-TS-2 (timestamps update on score change, still one row), SAVE-TS-1 (save response includes timestamp). Total: 43/43 PASS.
+
+NEW FRONTEND FEATURES (index.html):
+- Export menu (dropdown): Print / PDF (uses @media print stylesheet), Download CSV, Download JSON. All produce real downloadable blobs with the judge's own scores + timestamps.
+- Keyboard shortcuts overlay (press `?` to toggle): lists all shortcuts; close with Esc or click-outside.
+- Global keyboard handler: `/` focus search, `Esc` close/clear, `t` theme, `u` unscored-only, `r` refresh, `s` save focused card, `1-5` fill preset chip on focused card, `?` toggle shortcuts overlay.
+- Arrow Up/Down on score input steps ±1 (in addition to existing stepper buttons).
+- Undo last save: when a save updates an existing value, the success toast offers an "Undo" action button that re-saves the previous value (re-uses saveVote endpoint — never deletes; inserts have no undo since there's no previous value to revert to). undoStack capped at 10 entries.
+- Auto-save toggle (opt-in): 2s debounce after typing; only fires when value differs from saved; shows info-blue border ring on inputs when ON; toast confirms toggle. Pending timers are cancelled on logout or toggle-off.
+- Per-card relative timestamp: "Updated just now / 2m ago / 1h ago / 3d ago". Auto-refreshes every 30s.
+
+STYLING IMPROVEMENTS:
+- @media print stylesheet: hides chrome (header, toolbar, footer, toasts, save buttons, chips, stepper, hint) and renders a clean black-on-white card list with page-break-inside avoidance. Works in both light and dark themes (forces white background for print).
+- Subtle background dot pattern (radial-gradient) for visual texture.
+- focus-visible outlines on all interactive elements (accessibility).
+- Dropdown menu with slide-in animation.
+- Toast with action button slot (for Undo).
+- Relative-timestamp element styling with ◷ icon.
+- Keyboard shortcuts overlay with kbd-styled key chips and dashed separators.
+- Auto-save indicator ring on score inputs when enabled.
+
+BROWSER E2E VERIFICATION (all passed):
+- Shortcuts overlay: opens with `?` key, screenshot captured, closes with `Esc`.
+- Save+Undo: insert C001=85 (toast "Saved" no undo), update to 90 (toast with Undo), click Undo → value reverts to 85, server confirms {"C001":85}.
+- Auto-save: toggle ON, type 77 → badge stays "Not scored" immediately, after 2.5s badge becomes "✓ Saved", server confirms {"C001":77,"timestamps":{...}}.
+- Export CSV: dropdown opens, CSV downloaded with header + 4 rows (C001=77 with timestamp, others empty), correct CSV format with quoted names.
+- Export JSON: JSON downloaded with judgeId, judgeName, exportedAt ISO timestamp, contestants array with id/name/score/timestamp.
+- Keyboard shortcuts: `/` focuses search, `Esc` clears search, `t` toggles theme (light→dark), `3` fills 3rd preset (51) on focused card.
+- Per-card timestamp: shows "Updated just now" after save, auto-refreshes.
+- Round-trip regression: save 85 → update 90 → reload → "C001=90 badge=✓ Saved ts=Updated just now", server {"C001":90,"timestamps":{"C001":"..."}}.
+- Sticky footer on login screen: gap=0, footerBottom==viewport=844.
+- No JS console errors throughout.
+
+BUGS FOUND AND FIXED:
+- None in the app. All features worked first try.
+
+Stage Summary:
+- 43/43 tests pass (40 from round 1 + 3 new timestamp tests).
+- All round-2 features verified in-browser with no regressions.
+
+Recommended next phase:
+- Optional: organizer dashboard route (read-only aggregate view when SHOW_LIVE_RESULTS=true), judge notes/comments per contestant (would need backend column addition), batch scoring via CSV upload, real-time multi-judge progress indicator (anonymized count of judges who've completed).

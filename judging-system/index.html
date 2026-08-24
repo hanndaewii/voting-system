@@ -681,6 +681,196 @@
     }
     .empty .big { font-size: 40px; margin-bottom: 8px; }
 
+    /* =========================================================
+       Relative timestamp under card name
+       ========================================================= */
+    .card-timestamp {
+      font-size: 10px; color: var(--text-muted);
+      letter-spacing: 0.3px; margin-top: 4px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .card-timestamp::before { content: '◷'; font-size: 11px; }
+
+    /* =========================================================
+       Dropdown (export menu)
+       ========================================================= */
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 180px;
+      background: var(--card);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow);
+      padding: 6px;
+      z-index: 40;
+      display: none;
+    }
+    .dropdown-menu.show { display: block; animation: ddIn .15s ease both; }
+    @keyframes ddIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-menu button {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: var(--radius-xs);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .dropdown-menu button:hover { background: var(--card-soft); }
+    .dropdown-menu button svg { width: 16px; height: 16px; color: var(--text-muted); }
+    .dropdown-menu .dd-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+    /* =========================================================
+       Keyboard shortcuts overlay
+       ========================================================= */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(2, 6, 23, 0.55);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 70;
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .overlay.show { display: flex; animation: ovIn .2s ease both; }
+    @keyframes ovIn { from { opacity: 0; } to { opacity: 1; } }
+    .overlay-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      max-width: 460px; width: 100%;
+      padding: 24px;
+      position: relative;
+      max-height: 85vh; overflow-y: auto;
+    }
+    .overlay-card h3 { margin: 0 0 4px; font-size: 18px; font-weight: 800; }
+    .overlay-card .sub { color: var(--text-muted); font-size: 12px; margin-bottom: 18px; }
+    .overlay-close {
+      position: absolute; top: 14px; right: 14px;
+      width: 30px; height: 30px;
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      background: var(--card-soft);
+      color: var(--text-muted);
+      cursor: pointer; font-size: 16px; line-height: 1;
+    }
+    .shortcut-list { display: flex; flex-direction: column; gap: 8px; }
+    .shortcut-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px dashed var(--border);
+      font-size: 13px;
+    }
+    .shortcut-row:last-child { border-bottom: none; }
+    .shortcut-row .desc { color: var(--text); font-weight: 600; }
+    .shortcut-row .keys { display: flex; gap: 4px; }
+    .kbd {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 26px; height: 26px; padding: 0 7px;
+      border-radius: 6px;
+      background: var(--card-soft);
+      border: 1px solid var(--border-strong);
+      border-bottom-width: 2px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px; font-weight: 700; color: var(--text);
+    }
+
+    /* =========================================================
+       Toast with action button slot (undo)
+       ========================================================= */
+    .toast .actions { display: flex; gap: 4px; margin-left: 6px; flex: 0 0 auto; }
+    .toast .action-btn {
+      background: transparent;
+      border: 1px solid currentColor;
+      color: inherit;
+      font-size: 11px; font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .toast .action-btn:hover { background: rgba(255,255,255,0.12); }
+
+    /* =========================================================
+       Auto-save indicator on cards
+       ========================================================= */
+    .autosave-on .card[data-cid] [data-score] {
+      border-color: var(--info);
+      box-shadow: 0 0 0 2px rgba(3, 105, 161, 0.1);
+    }
+    .autosave-pending::after {
+      content: '⟳';
+      position: absolute;
+      right: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--info);
+      font-size: 12px;
+      animation: spin 1.4s linear infinite;
+    }
+
+    /* =========================================================
+       Background subtle pattern
+       ========================================================= */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .app { position: relative; z-index: 1; }
+
+    /* Better focus-visible */
+    .btn:focus-visible, .icon-btn:focus-visible, .chip:focus-visible,
+    .toggle-chip:focus-visible, .stepper button:focus-visible,
+    .dropdown-menu button:focus-visible, .overlay-close:focus-visible,
+    .toast .action-btn:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    /* =========================================================
+       Print stylesheet — clean export view
+       ========================================================= */
+    @media print {
+      body::before { display: none !important; }
+      header.topbar, footer.site, .toolbar, .toast-stack,
+      .celebrate, .overlay, .dash-actions, .stats-strip,
+      #saveAllBtn, #refreshBtn, #logoutBtn, .chips, .stepper,
+      .card [data-save], .card [data-step], .card .hint {
+        display: none !important;
+      }
+      .app { padding: 0; min-height: auto; }
+      main { padding: 0; }
+      body { background: #fff !important; color: #000 !important; }
+      .dash-head { box-shadow: none; border: 1px solid #000; border-radius: 0; }
+      .dash-head::before { display: none; }
+      .dash-title h2 { font-size: 18px; }
+      .progress-wrap { page-break-inside: avoid; }
+      .grid { display: block; }
+      .card {
+        box-shadow: none; border: 1px solid #000; border-radius: 0;
+        page-break-inside: avoid; padding: 8px 10px; margin-bottom: 6px;
+        animation: none !important;
+      }
+      .contestant-name { font-size: 14px; }
+      .badge { border: 1px solid #000 !important; background: #fff !important; color: #000 !important; }
+      [data-theme="dark"] { color-scheme: light; }
+      [data-theme="dark"] body { background: #fff !important; color: #000 !important; }
+      [data-theme="dark"] .card, [data-theme="dark"] .dash-head,
+      [data-theme="dark"] .auth-card { background: #fff !important; color: #000 !important; border-color: #000 !important; }
+    }
+
     /* hidden util */
     .hidden { display: none !important; }
   </style>
@@ -782,6 +972,38 @@
             Unscored only
           </button>
           <button class="btn subtle" id="saveAllBtn" type="button" style="height:40px;min-height:40px;font-size:13px;padding:0 14px;">Save all pending</button>
+          <button class="toggle-chip" id="autoSaveToggle" type="button" title="Auto-save scores 2 seconds after you stop typing">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>
+            Auto-save
+          </button>
+          <div class="dropdown" id="exportDropdown">
+            <button class="btn subtle" id="exportBtn" type="button" style="height:40px;min-height:40px;font-size:13px;padding:0 14px;" aria-haspopup="true" aria-expanded="false">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export
+            </button>
+            <div class="dropdown-menu" id="exportMenu" role="menu">
+              <button type="button" data-export="print" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Print / PDF
+              </button>
+              <button type="button" data-export="csv" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Download CSV
+              </button>
+              <button type="button" data-export="json" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                Download JSON
+              </button>
+              <div class="dd-sep"></div>
+              <button type="button" id="shortcutsBtn" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg>
+                Keyboard shortcuts
+              </button>
+            </div>
+          </div>
+          <button class="icon-btn" id="helpBtn" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)" style="border-color: var(--border-strong); color: var(--text-muted);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </button>
           <span class="right" id="rangeLabel">Range 1–100</span>
         </div>
 
@@ -828,6 +1050,29 @@
   </div>
 
   <!-- =========================================================
+       Keyboard shortcuts overlay
+       ========================================================= -->
+  <div class="overlay" id="shortcutsOverlay" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
+    <div class="overlay-card">
+      <button class="overlay-close" id="shortcutsClose" aria-label="Close">×</button>
+      <h3 id="shortcutsTitle">Keyboard shortcuts</h3>
+      <div class="sub">Speed up your scoring with these keys.</div>
+      <div class="shortcut-list">
+        <div class="shortcut-row"><span class="desc">Focus search</span><span class="keys"><span class="kbd">/</span></span></div>
+        <div class="shortcut-row"><span class="desc">Save focused score</span><span class="keys"><span class="kbd">Enter</span></span></div>
+        <div class="shortcut-row"><span class="desc">Increase / decrease focused score</span><span class="keys"><span class="kbd">▲</span><span class="kbd">▼</span></span></div>
+        <div class="shortcut-row"><span class="desc">Fill preset 1–5 on focused card</span><span class="keys"><span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span><span class="kbd">4</span><span class="kbd">5</span></span></div>
+        <div class="shortcut-row"><span class="desc">Save focused card</span><span class="keys"><span class="kbd">S</span></span></div>
+        <div class="shortcut-row"><span class="desc">Toggle dark mode</span><span class="keys"><span class="kbd">T</span></span></div>
+        <div class="shortcut-row"><span class="desc">Toggle unscored-only filter</span><span class="keys"><span class="kbd">U</span></span></div>
+        <div class="shortcut-row"><span class="desc">Refresh from Google Sheets</span><span class="keys"><span class="kbd">R</span></span></div>
+        <div class="shortcut-row"><span class="desc">Clear search / filters</span><span class="keys"><span class="kbd">Esc</span></span></div>
+        <div class="shortcut-row"><span class="desc">Show this help</span><span class="keys"><span class="kbd">?</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
        App configuration
        ========================================================= -->
   <script>
@@ -857,6 +1102,7 @@
       judgeName: null,
       contestants: [],
       votes: {},
+      timestamps: {},          // { contestantId: "2026-08-24 13:50:20" } from server
       uiScores: {},
       statuses: {},
       votingOpen: true,
@@ -868,7 +1114,10 @@
       search: '',
       sort: 'status',
       unscoredOnly: false,
-      celebrated: false
+      celebrated: false,
+      undoStack: [],           // [{ cid, prevScore, newScore }] most-recent-first
+      autoSave: false,         // opt-in auto-save toggle
+      autoSaveTimers: {}       // { cid: timeoutId } for debounce
     };
 
     // ============================================================
@@ -896,22 +1145,67 @@
     const TOAST_ICONS = {
       success: '✓', error: '✕', info: 'ⓘ'
     };
-    function toast(msg, type = 'info', ttl = 3200) {
+    function toast(msg, type = 'info', ttl = 3200, action) {
       const stack = $('#toastStack');
       if (!stack) return;
       const el = document.createElement('div');
       el.className = 'toast ' + type;
-      el.innerHTML = '<span class="ic">' + (TOAST_ICONS[type] || 'ⓘ') + '</span>' +
-                     '<span class="body">' + escapeHtml(msg) + '</span>' +
-                     '<button class="close" aria-label="Dismiss">×</button>';
+      let html = '<span class="ic">' + (TOAST_ICONS[type] || 'ⓘ') + '</span>' +
+                 '<span class="body">' + escapeHtml(msg) + '</span>';
+      if (action && action.label && typeof action.fn === 'function') {
+        html += '<span class="actions"><button class="action-btn" type="button">' + escapeHtml(action.label) + '</button></span>';
+      }
+      html += '<button class="close" aria-label="Dismiss">×</button>';
+      el.innerHTML = html;
       const close = () => {
         el.classList.add('leaving');
         setTimeout(() => el.remove(), 250);
       };
       el.querySelector('.close').addEventListener('click', close);
+      if (action && action.label) {
+        const ab = el.querySelector('.action-btn');
+        if (ab) ab.addEventListener('click', () => {
+          try { action.fn(); } finally { close(); }
+        });
+      }
       stack.appendChild(el);
       if (ttl) setTimeout(close, ttl);
     }
+
+    // ============================================================
+    // Relative time formatter ("2026-08-24 13:50:20" → "2m ago")
+    // ============================================================
+    function parseServerTimestamp(s) {
+      if (!s) return null;
+      // Format: YYYY-MM-DD HH:MM:SS (script timezone). Treat as local.
+      const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(String(s));
+      if (!m) return null;
+      return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+    }
+    function relativeTime(s) {
+      const d = parseServerTimestamp(s);
+      if (!d) return 'just now';
+      const diffMs = Date.now() - d.getTime();
+      if (diffMs < 0) return 'just now';
+      const sec = Math.floor(diffMs / 1000);
+      if (sec < 5) return 'just now';
+      if (sec < 60) return sec + 's ago';
+      const min = Math.floor(sec / 60);
+      if (min < 60) return min + 'm ago';
+      const hr = Math.floor(min / 60);
+      if (hr < 24) return hr + 'h ago';
+      const day = Math.floor(hr / 24);
+      if (day < 7) return day + 'd ago';
+      return d.toLocaleDateString();
+    }
+    // Refresh all visible card timestamps every 30s
+    setInterval(() => {
+      document.querySelectorAll('.card-timestamp[data-ts]').forEach(el => {
+        const cid = el.closest('.card').getAttribute('data-cid');
+        const ts = state.timestamps[cid];
+        if (ts) el.textContent = 'Updated ' + relativeTime(ts);
+      });
+    }, 30000);
 
     // ============================================================
     // Theme
@@ -1073,7 +1367,9 @@
           state.password = password;
           state.judgeName = r.judgeName || '';
           state.votes = r.votes || {};
+          state.timestamps = r.timestamps || {};
           state.celebrated = false;
+          state.undoStack = [];
           saveCreds(judgeId, password);
           await enterDashboard();
         } else {
@@ -1227,6 +1523,7 @@
               <div>
                 <div class="contestant-name">${escapeHtml(c.name)}</div>
                 <div class="contestant-id">${escapeHtml(c.id)}</div>
+                ${hasSaved && state.timestamps[c.id] ? '<div class="card-timestamp" data-ts>Updated ' + escapeHtml(relativeTime(state.timestamps[c.id])) + '</div>' : ''}
               </div>
               <span class="badge ${badge.cls}" data-badge>${badge.label}</span>
             </div>
@@ -1261,9 +1558,12 @@
         input.addEventListener('input', () => {
           state.uiScores[cid] = input.value;
           input.className = (input.className.replace(/\s*heat-\w+/g, '').trim()) + ' ' + heatClass(input.value);
+          if (state.autoSave && state.votingOpen) scheduleAutoSave(cid);
         });
         input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); stepInput(input, 1); }
+          else if (e.key === 'ArrowDown') { e.preventDefault(); stepInput(input, -1); }
         });
         saveBtn.addEventListener('click', () => onSaveClick(cid));
         if (stepUp) stepUp.addEventListener('click', () => stepInput(input, 1));
@@ -1276,6 +1576,7 @@
             state.uiScores[cid] = String(v);
             input.className = (input.className.replace(/\s*heat-\w+/g, '').trim()) + ' ' + heatClass(String(v));
             input.focus();
+            if (state.autoSave && state.votingOpen) scheduleAutoSave(cid);
           });
         });
       });
@@ -1337,6 +1638,7 @@
         return;
       }
       const hadExisting = state.votes[cid] !== undefined && state.votes[cid] !== null;
+      const prevScore = hadExisting ? state.votes[cid] : null;
       setCardStatus(cid, hadExisting ? 'updating' : 'saving', '', null);
       const saveBtn = card.querySelector('[data-save]');
       saveBtn.disabled = true;
@@ -1348,11 +1650,36 @@
         const r = res.response;
         const isNew = r.action === 'inserted';
         state.votes[cid] = r.score !== undefined ? r.score : score;
+        if (r.timestamp) state.timestamps[cid] = r.timestamp;
         state.uiScores[cid] = String(state.votes[cid]);
         input.value = state.uiScores[cid];
         setCardStatus(cid, 'saved', isNew ? 'Score saved.' : 'Score updated.', 'success');
         saveBtn.textContent = 'Update Score';
-        toast((isNew ? 'Saved ' : 'Updated ') + cid + ' = ' + state.votes[cid], 'success');
+        // Refresh the per-card relative timestamp
+        const tsEl = card.querySelector('[data-ts]');
+        if (state.timestamps[cid]) {
+          const label = 'Updated ' + relativeTime(state.timestamps[cid]);
+          if (tsEl) tsEl.textContent = label;
+          else {
+            const head = card.querySelector('.card-head > div');
+            if (head) {
+              const div = document.createElement('div');
+              div.className = 'card-timestamp';
+              div.setAttribute('data-ts', '');
+              div.textContent = label;
+              head.appendChild(div);
+            }
+          }
+        }
+        // Push undo entry (only meaningful for updates — inserting has no previous value to revert to)
+        if (!isNew && prevScore !== null && prevScore !== state.votes[cid]) {
+          state.undoStack.unshift({ cid, prevScore: prevScore, newScore: state.votes[cid] });
+          if (state.undoStack.length > 10) state.undoStack.pop();
+        }
+        const undoAction = (!isNew && prevScore !== null && prevScore !== state.votes[cid])
+          ? { label: 'Undo', fn: () => undoLastSave() }
+          : null;
+        toast((isNew ? 'Saved ' : 'Updated ') + cid + ' = ' + state.votes[cid], 'success', 4000, undoAction);
         updateProgress();
         refreshStats();
       } else {
@@ -1360,6 +1687,30 @@
         toast(res.error || 'Save failed for ' + cid, 'error');
         saveBtn.textContent = (state.votes[cid] !== undefined && state.votes[cid] !== null) ? 'Update Score' : 'Save Score';
       }
+    }
+
+    /**
+     * Undo the most recent save that had a previous value. Re-saves the
+     * previous value (re-uses the same saveVote endpoint — never deletes).
+     */
+    async function undoLastSave() {
+      const entry = state.undoStack.shift();
+      if (!entry) {
+        toast('Nothing to undo.', 'info', 1800);
+        return;
+      }
+      const c = state.contestants.find(x => x.id === entry.cid);
+      const name = c ? c.name : entry.cid;
+      // Set the input back to the previous value and call onSaveClick
+      const card = document.querySelector('.card[data-cid="' + cssEscape(entry.cid) + '"]');
+      if (card) {
+        const input = card.querySelector('[data-score]');
+        input.value = String(entry.prevScore);
+        state.uiScores[entry.cid] = String(entry.prevScore);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      await onSaveClick(entry.cid);
+      toast('Reverted ' + name + ' to ' + entry.prevScore, 'info', 2200);
     }
 
     async function saveAllPending() {
@@ -1438,6 +1789,7 @@
         if (r && r.ok) {
           state.judgeName = r.judgeName || state.judgeName;
           state.votes = r.votes || {};
+          state.timestamps = r.timestamps || {};
           $('#judgeNameLabel').textContent = state.judgeName ? '· ' + state.judgeName : '';
           state.uiScores = {};
           await loadStatusAndContestants();
@@ -1463,17 +1815,159 @@
       if (hasUnsavedChanges()) {
         if (!confirm('You have unsaved score changes. Log out anyway?')) return;
       }
+      // Cancel any pending auto-save timers
+      Object.values(state.autoSaveTimers).forEach(t => clearTimeout(t));
+      state.autoSaveTimers = {};
       clearCreds();
       state.judgeId = null;
       state.password = null;
       state.judgeName = null;
       state.votes = {};
+      state.timestamps = {};
       state.uiScores = {};
       state.statuses = {};
       state.celebrated = false;
+      state.undoStack = [];
       $('#dashView').classList.add('hidden');
       $('#authView').classList.remove('hidden');
       $('#loginForm').reset();
+    }
+
+    // ============================================================
+    // Auto-save (opt-in)
+    // ============================================================
+    function toggleAutoSave() {
+      state.autoSave = !state.autoSave;
+      $('#autoSaveToggle').classList.toggle('active', state.autoSave);
+      document.body.classList.toggle('autosave-on', state.autoSave);
+      toast(state.autoSave ? 'Auto-save ON — scores save 2s after typing.' : 'Auto-save OFF', 'info', 1800);
+      if (!state.autoSave) {
+        // cancel pending timers
+        Object.values(state.autoSaveTimers).forEach(t => clearTimeout(t));
+        state.autoSaveTimers = {};
+      }
+    }
+    function scheduleAutoSave(cid) {
+      // Debounce save: wait 2s after last keystroke before saving.
+      if (state.autoSaveTimers[cid]) clearTimeout(state.autoSaveTimers[cid]);
+      state.autoSaveTimers[cid] = setTimeout(() => {
+        delete state.autoSaveTimers[cid];
+        // Only auto-save if the input value is valid and differs from saved
+        const ui = state.uiScores[cid];
+        const saved = state.votes[cid];
+        if (ui === undefined || ui === '') return;
+        if (saved !== undefined && saved !== null && Number(ui) === Number(saved)) return;
+        onSaveClick(cid);
+      }, 2000);
+    }
+
+    // ============================================================
+    // Export my scores
+    // ============================================================
+    function buildScoreRows() {
+      // Stable order: by contestant ID
+      const list = state.contestants.slice().sort((a, b) => a.id.localeCompare(b.id));
+      return list.map(c => ({
+        id: c.id,
+        name: c.name,
+        score: (state.votes[c.id] !== undefined && state.votes[c.id] !== null) ? state.votes[c.id] : '',
+        timestamp: state.timestamps[c.id] || ''
+      }));
+    }
+    function exportCSV() {
+      const rows = buildScoreRows();
+      const header = ['Contestant ID', 'Contestant Name', 'Score', 'Last Updated'];
+      const lines = [header.join(',')];
+      rows.forEach(r => {
+        const nm = '"' + String(r.name).replace(/"/g, '""') + '"';
+        const ts = r.timestamp || '';
+        lines.push([r.id, nm, r.score, ts].join(','));
+      });
+      const csv = lines.join('\n');
+      downloadBlob(csv, 'my-scores.csv', 'text/csv');
+      toast('CSV downloaded (' + rows.length + ' rows).', 'success', 2200);
+    }
+    function exportJSON() {
+      const payload = {
+        judgeId: state.judgeId,
+        judgeName: state.judgeName,
+        exportedAt: new Date().toISOString(),
+        contestants: buildScoreRows()
+      };
+      downloadBlob(JSON.stringify(payload, null, 2), 'my-scores.json', 'application/json');
+      toast('JSON downloaded.', 'success', 2200);
+    }
+    function exportPrint() {
+      // Print uses the existing dashboard with the @media print stylesheet.
+      // We just trigger window.print().
+      toast('Use your browser\'s print dialog (or "Save as PDF").', 'info', 3000);
+      setTimeout(() => window.print(), 350);
+    }
+    function downloadBlob(text, filename, mime) {
+      const blob = new Blob([text], { type: mime + ';charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+    }
+
+    // ============================================================
+    // Keyboard shortcuts overlay
+    // ============================================================
+    function openShortcuts() { $('#shortcutsOverlay').classList.add('show'); }
+    function closeShortcuts() { $('#shortcutsOverlay').classList.remove('show'); }
+
+    function handleGlobalKeydown(e) {
+      // Ignore shortcuts when typing into inputs (except Esc and Enter which
+      // are handled by their own listeners).
+      const tag = (e.target && e.target.tagName || '').toUpperCase();
+      const inField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable;
+
+      // ? toggles shortcuts overlay (always)
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        if ($('#shortcutsOverlay').classList.contains('show')) closeShortcuts();
+        else openShortcuts();
+        return;
+      }
+      // Esc closes overlay / clears search
+      if (e.key === 'Escape') {
+        if ($('#shortcutsOverlay').classList.contains('show')) { closeShortcuts(); return; }
+        if ($('#exportMenu').classList.contains('show')) { $('#exportMenu').classList.remove('show'); return; }
+        if (state.search) { state.search = ''; $('#searchInput').value = ''; renderContestants(); return; }
+        if (state.unscoredOnly) { state.unscoredOnly = false; $('#unscoredOnly').classList.remove('active'); renderContestants(); return; }
+        return;
+      }
+      if (inField) return;
+      if ($('#shortcutsOverlay').classList.contains('show')) return;
+
+      // Shortcut keys (only when not typing in a field)
+      if (e.key === '/') { e.preventDefault(); $('#searchInput').focus(); return; }
+      const k = e.key.toLowerCase();
+      if (k === 't') { e.preventDefault(); toggleTheme(); return; }
+      if (k === 'u') { e.preventDefault(); $('#unscoredOnly').click(); return; }
+      if (k === 'r') { e.preventDefault(); if (!$('#refreshBtn').disabled) $('#refreshBtn').click(); return; }
+      if (k === 's') {
+        // Save the focused card (or the first card)
+        const focused = document.activeElement && document.activeElement.closest('.card');
+        const card = focused || document.querySelector('.card');
+        if (card) { e.preventDefault(); const cid = card.getAttribute('data-cid'); onSaveClick(cid); return; }
+      }
+      // 1-5: fill preset chip on focused (or first) card
+      if (/^[1-5]$/.test(e.key)) {
+        const focused = document.activeElement && document.activeElement.closest('.card');
+        const card = focused || document.querySelector('.card');
+        if (card) {
+          e.preventDefault();
+          const idx = Number(e.key) - 1;
+          const chips = card.querySelectorAll('[data-preset]');
+          if (chips[idx]) chips[idx].click();
+          return;
+        }
+      }
     }
 
     // ============================================================
@@ -1485,6 +1979,33 @@
       $('#refreshBtn').addEventListener('click', handleRefresh);
       $('#saveAllBtn').addEventListener('click', saveAllPending);
       $('#themeBtn').addEventListener('click', toggleTheme);
+      $('#autoSaveToggle').addEventListener('click', toggleAutoSave);
+      $('#helpBtn').addEventListener('click', openShortcuts);
+      $('#shortcutsClose').addEventListener('click', closeShortcuts);
+      $('#shortcutsBtn').addEventListener('click', () => { closeExportMenu(); openShortcuts(); });
+      $('#shortcutsOverlay').addEventListener('click', (e) => {
+        if (e.target === $('#shortcutsOverlay')) closeShortcuts();
+      });
+
+      // Export dropdown
+      $('#exportBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const menu = $('#exportMenu');
+        const open = menu.classList.toggle('show');
+        $('#exportBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#exportDropdown')) closeExportMenu();
+      });
+      $$('[data-export]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const kind = btn.getAttribute('data-export');
+          closeExportMenu();
+          if (kind === 'csv') exportCSV();
+          else if (kind === 'json') exportJSON();
+          else if (kind === 'print') exportPrint();
+        });
+      });
 
       $('#searchInput').addEventListener('input', (e) => {
         state.search = e.target.value;
@@ -1499,6 +2020,12 @@
         $('#unscoredOnly').classList.toggle('active', state.unscoredOnly);
         renderContestants();
       });
+
+      document.addEventListener('keydown', handleGlobalKeydown);
+    }
+    function closeExportMenu() {
+      $('#exportMenu').classList.remove('show');
+      $('#exportBtn').setAttribute('aria-expanded', 'false');
     }
 
     async function tryRestoreSession() {
@@ -1512,6 +2039,7 @@
           state.password = creds.password;
           state.judgeName = r.judgeName || '';
           state.votes = r.votes || {};
+          state.timestamps = r.timestamps || {};
           await enterDashboard();
         }
       } catch (e) { /* stay on login */ }
