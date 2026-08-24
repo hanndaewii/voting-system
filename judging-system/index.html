@@ -491,6 +491,13 @@
     .card.error { border-color: rgba(220,38,38,0.5); box-shadow: var(--shadow-sm), inset 3px 0 0 var(--error); }
     .card.error:hover { box-shadow: var(--shadow), inset 3px 0 0 var(--error); }
     [data-theme="dark"] .card.error { border-color: rgba(239,68,68,0.5); }
+    /* Enter-to-next jump highlight ring */
+    .card.jump-ring { border-color: var(--primary); animation: jumpRing 1.2s ease-out; }
+    @keyframes jumpRing {
+      0%   { box-shadow: 0 0 0 0 rgba(15,118,110,0.55), inset 3px 0 0 var(--primary); }
+      60%  { box-shadow: 0 0 0 8px rgba(15,118,110,0), inset 3px 0 0 var(--primary); }
+      100% { box-shadow: var(--shadow-sm), inset 3px 0 0 var(--primary); }
+    }
     .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
     .contestant-name { font-weight: 800; font-size: 16px; line-height: 1.25; }
     .contestant-id {
@@ -518,6 +525,43 @@
     .score-row input[type="number"].heat-mid { background: var(--warning-soft); border-color: var(--warning); color: var(--warning); }
     .score-row input[type="number"].heat-high { background: var(--success-soft); border-color: var(--success); color: var(--success); }
     .score-row .btn { flex: 0 0 auto; min-width: 130px; }
+
+    /* Score position mini-bar — shows where the typed score sits in [min, max] */
+    .range-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: -4px;
+      padding: 0 2px;
+      user-select: none;
+    }
+    .range-bar .range-min, .range-bar .range-max {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.3px;
+      flex: 0 0 auto;
+    }
+    .range-bar .range-track {
+      flex: 1 1 auto;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--card-soft);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+    }
+    .range-bar .range-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--border-strong);
+      transition: width .25s cubic-bezier(.4,0,.2,1), background .2s ease;
+      min-width: 0;
+    }
+    .range-bar .range-fill.heat-low { background: linear-gradient(90deg, rgba(220,38,38,.65), var(--error)); }
+    .range-bar .range-fill.heat-mid { background: linear-gradient(90deg, rgba(202,138,4,.65), var(--warning)); }
+    .range-bar .range-fill.heat-high { background: linear-gradient(90deg, rgba(22,163,74,.65), var(--success)); }
+    .card.collapsed .range-bar { display: none; }
+    .density-compact .range-bar { display: none; }
+    @media print { .range-bar { display: none !important; } }
+
     .hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .card-msg {
       font-size: 12px;
@@ -921,9 +965,12 @@
     .dist-bar:hover .tip { opacity: 1; }
     .dist-labels {
       display: flex; justify-content: space-between;
-      font-size: 9px; color: var(--text-muted);
-      margin-top: 4px; font-weight: 600;
+      font-size: 10px; color: var(--text-muted);
+      margin-top: 5px; font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      opacity: .95;
     }
+    [data-theme="dark"] .dist-labels { color: #b6c2d4; }
 
     /* =========================================================
        Card collapse
@@ -984,6 +1031,39 @@
     .org-summary .tile .v { font-size: 22px; font-weight: 800; color: var(--primary-strong); }
     [data-theme="dark"] .org-summary .tile .v { color: var(--primary); }
     .org-summary .tile .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700; }
+    /* LIVE pill — shown while the organizer auto-refresh poll is running */
+    .org-live {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+      color: var(--text-muted);
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--card-soft);
+      font-variant-numeric: tabular-nums;
+      opacity: .75;
+      transition: opacity .2s ease, border-color .2s ease, color .2s ease;
+    }
+    .org-live .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+      transition: background .2s ease, box-shadow .2s ease;
+    }
+    .org-live.on { opacity: 1; color: var(--success); border-color: rgba(22,163,74,0.45); }
+    [data-theme="dark"] .org-live.on { color: var(--success); }
+    .org-live.on .dot {
+      background: var(--success);
+      box-shadow: 0 0 0 0 rgba(22,163,74,0.5);
+      animation: orgLivePulse 2s ease-out infinite;
+    }
+    [data-theme="dark"] .org-live.on .dot { background: var(--success); }
+    @keyframes orgLivePulse {
+      0%   { box-shadow: 0 0 0 0 rgba(22,163,74,0.45); }
+      70%  { box-shadow: 0 0 0 6px rgba(22,163,74,0); }
+      100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+    }
+    @media print { .org-live { display: none !important; } }
     .org-table-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
     table.org-table {
       width: 100%;
@@ -1502,10 +1582,10 @@
             <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
           </div>
           <div class="stats-strip" id="statsStrip">
-            <div class="stat-tile avg"><span class="glyph">Σ</span><div class="v" id="statAvg">—</div><div class="l">Average</div></div>
-            <div class="stat-tile hi"><span class="glyph">▲</span><div class="v" id="statHi">—</div><div class="l">Highest</div></div>
-            <div class="stat-tile lo"><span class="glyph">▼</span><div class="v" id="statLo">—</div><div class="l">Lowest</div></div>
-            <div class="stat-tile rem"><span class="glyph">◷</span><div class="v" id="statRem">—</div><div class="l">Remaining</div></div>
+            <div class="stat-tile avg" title="Your average score across all scored contestants"><span class="glyph">Σ</span><div class="v" id="statAvg">—</div><div class="l">Average</div></div>
+            <div class="stat-tile hi" title="Your highest score given"><span class="glyph">▲</span><div class="v" id="statHi">—</div><div class="l">Highest</div></div>
+            <div class="stat-tile lo" title="Your lowest score given"><span class="glyph">▼</span><div class="v" id="statLo">—</div><div class="l">Lowest</div></div>
+            <div class="stat-tile rem" title="Contestants you haven't scored yet"><span class="glyph">◷</span><div class="v" id="statRem">—</div><div class="l">Remaining</div></div>
           </div>
           <div class="top-picks" id="topPicks" style="display:none;">
             <div class="tp-label">🏅 Top picks</div>
@@ -1609,7 +1689,14 @@
               <div class="sub" style="margin:0;">Read-only. Per-judge scores are never exposed — only contestant totals, averages, and ranks.</div>
             </div>
             <div class="dash-actions">
+              <span id="orgLiveIndicator" class="org-live" title="Results auto-refresh every 15 seconds while this tab is open">
+                <span class="dot"></span>LIVE· <span class="t">…</span>
+              </span>
               <button class="btn subtle" id="orgRefreshBtn" type="button" title="Refresh results">↻ Refresh</button>
+              <button class="btn subtle" id="orgCopyBtn" type="button" disabled style="opacity:.5;" title="Copy results as TSV — pastes directly into Google Sheets">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy
+              </button>
               <button class="btn subtle" id="orgExportCsvBtn" type="button" disabled style="opacity:.5;" title="Download results as CSV">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 CSV
@@ -1707,7 +1794,7 @@
       <div class="sub">Speed up your scoring with these keys.</div>
       <div class="shortcut-list">
         <div class="shortcut-row"><span class="desc">Focus search</span><span class="keys"><span class="kbd">/</span></span></div>
-        <div class="shortcut-row"><span class="desc">Save focused score</span><span class="keys"><span class="kbd">Enter</span></span></div>
+        <div class="shortcut-row"><span class="desc">Save focused score &amp; jump to next unscored</span><span class="keys"><span class="kbd">Enter</span></span></div>
         <div class="shortcut-row"><span class="desc">Increase / decrease focused score</span><span class="keys"><span class="kbd">▲</span><span class="kbd">▼</span></span></div>
         <div class="shortcut-row"><span class="desc">Fill preset 1–5 on focused card</span><span class="keys"><span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span><span class="kbd">4</span><span class="kbd">5</span></span></div>
         <div class="shortcut-row"><span class="desc">Save focused card</span><span class="keys"><span class="kbd">S</span></span></div>
@@ -1775,6 +1862,8 @@
       judgesCompleted: 0,      // anonymized count from status endpoint
       showLiveResults: false,  // mirrors backend SHOW_LIVE_RESULTS
       orgLoaded: false,        // whether organizer view data has been fetched
+      lastOrgFetch: 0,         // timestamp of last organizer results fetch
+      orgPollTimer: null,      // setInterval id for organizer live refresh
       lastSync: 0,             // timestamp of last successful poll
       pollTimer: null,        // setInterval id for periodic polling
       syncTimer: null,        // setInterval id for "synced Xs ago" text
@@ -2316,6 +2405,8 @@
       else if (sec < 60) label = sec + 's';
       else { const m = Math.floor(sec / 60); label = m + 'm'; }
       $('#syncNum').textContent = label;
+      // Also tick the organizer LIVE indicator while the Results tab is open
+      if (state.orgPollTimer) renderOrgLiveIndicator();
     }
 
     // ============================================================
@@ -2422,6 +2513,54 @@
       toast('Results CSV downloaded (' + breakdown.length + ' rows).', 'success', 2400);
     }
 
+    /**
+     * Copy the current results table to the clipboard as TSV so it can be
+     * pasted straight into Google Sheets / Excel / chat apps.
+     */
+    async function copyResultsToClipboard() {
+      if (!state.showLiveResults) {
+        toast('Results are hidden — nothing to copy.', 'info', 2200);
+        return;
+      }
+      let breakdown = [];
+      try {
+        const r = await apiGet({ action: 'results' });
+        if (r && r.ok && Array.isArray(r.breakdown)) breakdown = r.breakdown;
+      } catch (e) { /* fall through */ }
+      if (!breakdown.length) {
+        toast('No results to copy.', 'info', 2000);
+        return;
+      }
+      const header = ['Rank', 'Contestant ID', 'Contestant Name', 'Total Score', 'Judges Count', 'Average'];
+      const lines = [header.join('\t')];
+      breakdown.forEach(b => {
+        lines.push([b.rank, b.contestantId, b.name, b.total, b.count, (b.average === null ? '' : b.average)].join('\t'));
+      });
+      const tsv = lines.join('\n');
+      let ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(tsv);
+          ok = true;
+        }
+      } catch (e) { /* fall back to execCommand */ }
+      if (!ok) {
+        // Legacy fallback: hidden textarea + execCommand('copy')
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = tsv;
+          ta.setAttribute('readonly', '');
+          ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+          document.body.appendChild(ta);
+          ta.select();
+          ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+        } catch (e) { ok = false; }
+      }
+      if (ok) toast('Copied ' + breakdown.length + ' rows as TSV — paste into Sheets.', 'success', 2600);
+      else toast('Copy failed — use CSV download instead.', 'error', 3000);
+    }
+
     // ============================================================
     // Rendering — contestant cards with sort/filter/search
     // ============================================================
@@ -2445,6 +2584,27 @@
       if (pct < 0.4) return 'heat-low';
       if (pct < 0.7) return 'heat-mid';
       return 'heat-high';
+    }
+
+    /** Percentage string (0–100%) of a score's position within the valid range. */
+    function rangePct(v) {
+      if (v === '' || v === null || v === undefined) return '0%';
+      const n = Number(v);
+      if (!isFinite(n)) return '0%';
+      const span = state.maxScore - state.minScore;
+      if (span <= 0) return '0%';
+      const pct = Math.min(1, Math.max(0, (n - state.minScore) / span));
+      return Math.round(pct * 100) + '%';
+    }
+
+    /** Sync a card's mini range-bar with its current input value. */
+    function updateRangeBar(card, v) {
+      const bar = card.querySelector('[data-range]');
+      if (!bar) return;
+      const fill = bar.querySelector('.range-fill');
+      if (!fill) return;
+      fill.style.width = rangePct(v);
+      fill.className = 'range-fill ' + heatClass(v);
     }
 
     function getVisibleList() {
@@ -2566,8 +2726,15 @@
               </div>
               <button class="btn primary-strong" data-save ${disabled}>${btnLabel}</button>
             </div>
+            <div class="range-bar" data-range aria-hidden="true">
+              <span class="range-min">${state.minScore}</span>
+              <div class="range-track">
+                <div class="range-fill ${hc}" style="width:${rangePct(inputVal)}"></div>
+              </div>
+              <span class="range-max">${state.maxScore}</span>
+            </div>
             <div class="chips">${chipsHtml}</div>
-            <div class="hint">Range ${state.minScore}–${state.maxScore}. Tap a chip to fill. Press Enter to save.</div>
+            <div class="hint">Range ${state.minScore}–${state.maxScore}. Tap a chip to fill. Enter saves &amp; jumps to the next unscored card.</div>
             <div class="card-msg" data-msg></div>
           </div>`;
       }).join('');
@@ -2587,10 +2754,11 @@
         input.addEventListener('input', () => {
           state.uiScores[cid] = input.value;
           input.className = (input.className.replace(/\s*heat-\w+/g, '').trim()) + ' ' + heatClass(input.value);
+          updateRangeBar(card, input.value);
           if (state.autoSave && state.votingOpen) scheduleAutoSave(cid);
         });
         input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+          if (e.key === 'Enter') { e.preventDefault(); onSaveClick(cid, { viaKeyboard: true }); }
           else if (e.key === 'ArrowUp') { e.preventDefault(); stepInput(input, 1); }
           else if (e.key === 'ArrowDown') { e.preventDefault(); stepInput(input, -1); }
         });
@@ -2613,6 +2781,7 @@
             input.value = v;
             state.uiScores[cid] = String(v);
             input.className = (input.className.replace(/\s*heat-\w+/g, '').trim()) + ' ' + heatClass(String(v));
+            updateRangeBar(card, String(v));
             input.focus();
             if (state.autoSave && state.votingOpen) scheduleAutoSave(cid);
           });
@@ -2689,7 +2858,8 @@
     // ============================================================
     // Save handlers
     // ============================================================
-    async function onSaveClick(cid) {
+    async function onSaveClick(cid, opts) {
+      const viaKeyboard = !!(opts && opts.viaKeyboard);
       if (!state.votingOpen) {
         setCardStatus(cid, 'error', 'Voting is closed.', 'error');
         toast('Voting is closed — score not saved.', 'error');
@@ -2767,6 +2937,10 @@
         toast((isNew ? 'Saved ' : 'Updated ') + cid + ' = ' + state.votes[cid], 'success', 4000, undoAction);
         updateProgress();
         refreshStats();
+        // Enter-to-next: when the save was triggered by Enter, jump straight
+        // to the next unscored card so judges can score the whole roster
+        // without touching the mouse.
+        if (viaKeyboard) focusNextUnscored(cid);
         // Re-fetch status so judges-progress updates (anonymized count may have changed)
         loadStatusAndContestants();
       } else {
@@ -2774,6 +2948,35 @@
         toast(res.error || 'Save failed for ' + cid, 'error');
         saveBtn.textContent = (state.votes[cid] !== undefined && state.votes[cid] !== null) ? 'Update Score' : 'Save Score';
       }
+    }
+
+    /**
+     * Enter-to-next flow: after saving a card via Enter, focus the score
+     * input of the next unscored card in the visible list order. If every
+     * card is scored, do nothing (the celebration overlay takes over).
+     */
+    function focusNextUnscored(fromCid) {
+      const cards = $$('#contestantGrid .card');
+      if (!cards.length) return;
+      const fromIdx = cards.findIndex(c => c.getAttribute('data-cid') === fromCid);
+      // Search forward from the current card, then wrap around once.
+      const order = cards.slice(fromIdx + 1).concat(cards.slice(0, fromIdx + 1));
+      const next = order.find(card => {
+        const id = card.getAttribute('data-cid');
+        const v = state.votes[id];
+        return v === undefined || v === null;
+      });
+      if (!next) return; // all scored — nothing to focus
+      const input = next.querySelector('[data-score]');
+      if (!input || input.disabled) return;
+      next.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      input.focus({ preventScroll: true });
+      input.select();
+      // Brief highlight ring so the jump is obvious
+      next.classList.remove('jump-ring');
+      void next.offsetWidth; // restart animation
+      next.classList.add('jump-ring');
+      setTimeout(() => next.classList.remove('jump-ring'), 1200);
     }
 
     /**
@@ -2994,6 +3197,8 @@
       state.undoStack = [];
       state.collapsedCards = {};
       state.orgLoaded = false;
+      state.lastOrgFetch = 0;
+      stopOrgAutoRefresh();
       state.compareMode = false;
       state.comparisonData = {};
       state.lastSync = 0;
@@ -3036,24 +3241,72 @@
           history.replaceState(null, '', newHash ? newHash : location.pathname + location.search);
         }
       }
-      if (!isJudge && loggedIn && !state.orgLoaded) {
+      // Always fetch fresh results when the organizer tab becomes visible
+      // (fixes stale data when navigating back via hashchange) and manage
+      // the 15s live-poll timer that keeps the table current while visible.
+      if (!isJudge && loggedIn) {
         loadOrganizerView();
+        startOrgAutoRefresh();
+      } else {
+        stopOrgAutoRefresh();
       }
     }
-    async function loadOrganizerView() {
+
+    /** Poll organizer results every 15s while the Results tab is visible. */
+    function startOrgAutoRefresh() {
+      if (state.orgPollTimer) return; // already running
+      state.orgPollTimer = setInterval(() => {
+        // Only poll while the view is actually shown and the tab is focused
+        if (!state.judgeId || $('#orgView').classList.contains('hidden')) {
+          stopOrgAutoRefresh();
+          return;
+        }
+        if (document.hidden) return; // skip when tab is in background
+        loadOrganizerView(true); // silent: keep existing table while fetching
+      }, 15000);
+      renderOrgLiveIndicator();
+    }
+    function stopOrgAutoRefresh() {
+      if (state.orgPollTimer) {
+        clearInterval(state.orgPollTimer);
+        state.orgPollTimer = null;
+      }
+      const live = $('#orgLiveIndicator');
+      if (live) live.classList.remove('on');
+    }
+    /** Small "LIVE" pill showing the last results refresh time. */
+    function renderOrgLiveIndicator() {
+      const live = $('#orgLiveIndicator');
+      if (!live) return;
+      if (!state.orgPollTimer) return;
+      live.classList.add('on');
+      const ago = state.lastOrgFetch ? Math.max(0, Math.round((Date.now() - state.lastOrgFetch) / 1000)) : 0;
+      const t = live.querySelector('.t');
+      if (t) t.textContent = state.lastOrgFetch ? (ago < 5 ? 'just now' : ago + 's ago') : '…';
+    }
+    async function loadOrganizerView(silent) {
       const body = $('#orgBody');
       const summary = $('#orgSummary');
       const exportBtn = $('#orgExportCsvBtn');
-      body.innerHTML = '<div class="org-empty"><div class="big">⏳</div><div>Loading results…</div></div>';
-      summary.innerHTML = '';
+      if (!silent) {
+        body.innerHTML = '<div class="org-empty"><div class="big">⏳</div><div>Loading results…</div></div>';
+        summary.innerHTML = '';
+      }
       try {
         const r = await apiGet({ action: 'results' });
         state.orgLoaded = true;
+        state.lastOrgFetch = Date.now();
+        renderOrgLiveIndicator();
         // Enable the export button only when results are actually visible
         if (exportBtn) {
           const canExport = r.ok && state.showLiveResults;
           exportBtn.disabled = !canExport;
           exportBtn.style.opacity = canExport ? '' : '.5';
+          const copyBtn = $('#orgCopyBtn');
+          if (copyBtn) {
+            copyBtn.disabled = !canExport;
+            copyBtn.style.opacity = canExport ? '' : '.5';
+          }
         }
         if (!r.ok) {
           if (r.hidden) {
@@ -3381,7 +3634,8 @@
           target: '.card',
           title: 'Score a contestant',
           body: 'Type a score or tap a <b>preset chip</b> — the input tints red / amber / green as you go ' +
-                '(heat map). Press <kbd>Enter</kbd> to save. Scored cards can be <b>collapsed</b> to keep the list tidy.'
+                '(heat map), and the <b>range bar</b> shows where it sits in 1–100. Press <kbd>Enter</kbd> to save ' +
+                'and jump to the next unscored card. Scored cards can be <b>collapsed</b> to keep the list tidy.'
         },
         {
           target: '#tabbar',
@@ -3545,6 +3799,7 @@
         state.orgLoaded = false;
         loadOrganizerView();
       });
+      $('#orgCopyBtn').addEventListener('click', copyResultsToClipboard);
       $('#orgExportCsvBtn').addEventListener('click', exportResultsCSV);
       window.addEventListener('hashchange', () => {
         if (!state.judgeId) return;

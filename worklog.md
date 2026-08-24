@@ -429,3 +429,54 @@ Stage Summary:
 
 Recommended next phase:
 - Optional: CSV batch upload for organizers to seed contestants/judges, judge notes/comments per contestant (needs backend column), organizer live-results auto-refresh, sound effects toggle, ARIA/screen-reader audit, localization (fil/es).
+
+---
+Task ID: 60 (webDevReview round 6)
+Agent: webDevReview
+Task: QA baseline + bugfix (organizer stale data) + new features (live results polling, Enter-to-next, range bars, copy TSV) + polish.
+
+Work Log:
+- Read worklog; project stable at 46/46 tests from round 5.
+- QA baseline: 46/46 tests passed. Browser smoke: login, session restore, save/update round-trip (85→90→89), upsert no-duplicates, dark mode, search + empty state, keyboard shortcuts (?, /, Esc, t), organizer view.
+- INFRA FIX (sandbox-only): Chrome in this sandbox can only reach ports 3000/81 (Caddy gateway). Patched test/mock-server.js to (a) bind explicitly to 0.0.0.0 so Caddy's IPv4 proxy can reach it, and (b) rewrite the served API_URL to http://localhost:81/api?XTransformPort=8788 so the sandboxed browser's API calls route through the gateway. Also switched to start-stop-daemon for a persistent background server (plain `&` processes were being killed between bash calls). E2E URL is now http://localhost:81/?XTransformPort=8788.
+
+BUG FOUND AND FIXED:
+1. Organizer view showed stale data when navigating back via location.hash='#organizer' or the tab buttons — switchTab only fetched results when state.orgLoaded was false, so the first (possibly stale) load persisted for the whole session. FIXED by making switchTab always call loadOrganizerView() when the organizer tab becomes visible, plus start/stop of a 15s auto-poll timer (state.orgPollTimer) managed in switchTab/performLogout.
+
+NEW FEATURES (all frontend; Code.gs untouched at 705 lines):
+1. Organizer live results — while the Results tab is visible, results re-fetch every 15s (skips when document.hidden). A pulsing "LIVE · Xs ago" pill (orgLiveIndicator) sits in the org header and ticks via renderSyncIndicator's 5s interval. Polls are "silent" (loadOrganizerView(true)) so the table doesn't flash a loading state. Timer is cleaned up on tab switch away and logout.
+2. Enter-to-save-and-next — Enter in a score input now calls onSaveClick(cid, {viaKeyboard:true}); after a successful save, focusNextUnscored(cid) scrolls the next unscored card into view (wrap-around search), focuses + selects its input, and plays a 1.2s teal jumpRing highlight animation. Judges can score the entire roster keyboard-only. Shortcuts overlay + tour copy + card hint updated to document the flow.
+3. Score position mini-bar — each card gets a slim range-bar under the score input: min/max labels, track, and a gradient fill whose width = (score-min)/(max-min) and color follows the heat class (red/amber/green). Updates live on input/chip/stepper changes; hidden when card is collapsed, in compact density, and in print. Helpers: rangePct(), updateRangeBar().
+4. Copy results to clipboard (organizer) — new Copy button next to CSV copies the rankings as TSV (Rank/ID/Name/Total/Judges/Average, tab-separated) via navigator.clipboard.writeText with an execCommand textarea fallback; enables/disables in lockstep with the CSV button; toast confirms row count.
+5. Stat tile tooltips — title attributes on Average/Highest/Lowest/Remaining tiles.
+
+STYLING IMPROVEMENTS:
+- .org-live pill: card-soft bg, green pulsing dot (orgLivePulse keyframes), tabular-nums, transitions; hidden in print.
+- .range-bar: 5px track with border, gradient fills per heat class, cubic-bezier width transition; range-min/max micro-labels.
+- .card.jump-ring: teal border + expanding box-shadow ring animation for the Enter-jump feedback.
+- .dist-labels: 9px→10px, weight 600→700, tabular-nums, brighter dark-mode color (#b6c2d4) — addresses VLM contrast feedback from round 5.
+- Shortcuts overlay row updated: "Save focused score & jump to next unscored".
+
+BROWSER E2E VERIFICATION (all passed):
+- Enter-chain scoring as JUDGE-02: type 85 + Enter → C001 saved, focus jumps to C002 with ring; 92 → C004; 70 → C005; 100 → all scored, celebration shows then auto-hides. Server confirms {C001:85, C002:92, C004:70, C005:100} with timestamps. Zero mouse clicks needed.
+- Range bar: input 50 → fill 49% heat-mid; 88 → 88% heat-high; persists correctly after reload (C001 85%, C002 92%, C004 95%, C005 49%); display:none when card collapsed and when compact density; restored on uncollapse/comfortable.
+- Organizer live refresh: changed JUDGE-02/C005 to 50 via debug endpoint while on Results tab → within 16s the table reshuffled (Maria 1st 184, Liza 150) and Top average dropped 100→92 with no manual refresh; LIVE pill ticked "just now" → "12s ago".
+- Hash re-entry: changed C004 to 95 while away, hash back to #organizer → table immediately shows Ana Garcia 3rd (165, avg 82.5). LIVE shows "just now".
+- Copy TSV: intercepted clipboard.writeText — exact TSV with header + 4 rows, tab-separated, correct ranks.
+- Undo regression: 88→90→undo→88. Search "Ana"→1 card; unscored filter→0; export menu opens; sticky footer gap=0 at scroll end; mobile 390px no horizontal overflow.
+- Zero JS console errors throughout all flows.
+
+VLM VISUAL QA:
+- Organizer view w/ LIVE pill + Refresh/Copy/CSV row: "well aligned", no issues.
+- Card close-up: range bar "very clean and well-integrated", contextual colors confirmed.
+- Final dashboard: 8.5/10 "highly polished, production-ready".
+- Mobile 390px: no overflow; celebration auto-hides (display:none verified).
+
+Stage Summary:
+- 46/46 unit tests pass (backend unchanged).
+- index.html: 3641 → 3896 lines. README updated with 5 new feature bullets.
+- 1 real bug fixed (stale organizer data) + 4 new features + styling polish.
+- Sandbox E2E access pattern now documented: mock server on 0.0.0.0:8788, browse via http://localhost:81/?XTransformPort=8788.
+
+Recommended next phase:
+- Optional: CSV batch upload for organizers to seed contestants/judges (needs backend), judge notes/comments (needs backend column), sound effects toggle, ARIA/screen-reader audit, localization (fil/es), share-to-chat result card image export.

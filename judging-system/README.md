@@ -291,6 +291,17 @@ Validates in spec order, then upserts the vote inside a
 - **Clear-filters button** in the empty search state
 - **Themed scrollbars**, brand gradient, card left-edge status accents,
   `prefers-reduced-motion` support
+- **Enter-to-save-and-next** — pressing Enter saves the focused card and jumps
+  straight to the next unscored contestant's input (with a highlight ring), so a
+  judge can score the entire roster without touching the mouse
+- **Score position mini-bar** — a slim colored bar under each score input showing
+  where the typed value sits within the valid range (red/amber/green gradient)
+- **Organizer live results** — the Results tab auto-refreshes every 15s while
+  visible, with a pulsing “LIVE · Xs ago” pill; re-entering the tab always fetches
+  fresh data (no more stale rankings)
+- **Copy results to clipboard** (organizer) — one click copies the rankings table
+  as TSV, which pastes directly into Google Sheets or Excel
+- **Stat tile tooltips** — hover hints explaining each stat on the dashboard strip
 
 ---
 
