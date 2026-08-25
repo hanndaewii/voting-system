@@ -1,0 +1,10 @@
+{
+  "name": "judging-system",
+  "compatibility_date": "2025-03-01",
+  "assets": {
+    "directory": "."
+  },
+  "build": {
+    "command": ""
+  }
+}
