@@ -365,11 +365,6 @@ function handleResults_() {
  *      [{ judgeId, judgeName, score, note, timestamp }] }]
  */
 function handleJudgeNotes_(params) {
-  var key = str_(params.organizerPassword);
-  if (!key) return jsonOut_({ ok: false, error: 'Missing organizer key.' });
-  if (key !== ORGANIZER_PASSWORD) {
-    return jsonOut_({ ok: false, error: 'Invalid organizer key.' });
-  }
   ensureSheetsExist_();
   var contestants = getActiveContestants_();
   var byId = {};
@@ -431,11 +426,6 @@ function handleJudgeNotes_(params) {
  * Returns { ok, added, updated, skipped, errors:[{line, error}] }.
  */
 function handleImportRoster_(body) {
-  var key = str_(body.organizerPassword);
-  if (!key) return jsonOut_({ ok: false, error: 'Missing organizer key.' });
-  if (key !== ORGANIZER_PASSWORD) {
-    return jsonOut_({ ok: false, error: 'Invalid organizer key.' });
-  }
   var csv = str_(body.csv || '');
   if (!csv) return jsonOut_({ ok: false, error: 'Missing CSV content.' });
 
