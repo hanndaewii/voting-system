@@ -12,14 +12,24 @@ type Conn = "connecting" | "live" | "polling";
 export default function AdminLive({ contestId }: { contestId: string }) {
   const router = useRouter();
   const [conn, setConn] = useState<Conn>("connecting");
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [events, setEvents] = useState(0);
   const connRef = useRef<Conn>("connecting");
 
   useEffect(() => {
     const supabase = createClient();
     let debounce: ReturnType<typeof setTimeout> | null = null;
-    const refreshSoon = () => {
+    const refreshSoon = (payload?: object) => {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.debug("[admin-live] db event, refreshing soon", payload);
+      }
+      setEvents((n) => n + 1);
       if (debounce) clearTimeout(debounce);
-      debounce = setTimeout(() => router.refresh(), 1000);
+      debounce = setTimeout(() => {
+        setUpdatedAt(new Date());
+        router.refresh();
+      }, 1000);
     };
 
     const channel = supabase
@@ -57,28 +67,46 @@ export default function AdminLive({ contestId }: { contestId: string }) {
   }, [contestId, router]);
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
-        conn === "live"
-          ? "bg-green-100 text-green-800"
-          : conn === "polling"
-            ? "bg-amber-100 text-amber-800"
-            : "bg-gray-100 text-gray-600"
-      }`}
-      title={
-        conn === "live"
-          ? "Realtime connected — updates arrive automatically"
-          : conn === "polling"
-            ? "Realtime down — polling every 30s"
-            : "Connecting to live updates…"
-      }
-    >
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => {
+          setUpdatedAt(new Date());
+          router.refresh();
+        }}
+        title="Re-fetch now"
+        className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gold-700 ring-1 ring-gold-200 transition hover:bg-gold-50"
+      >
+        Refresh
+      </button>
       <span
-        className={`h-2 w-2 rounded-full ${
-          conn === "live" ? "bg-green-600" : conn === "polling" ? "bg-amber-500" : "bg-gray-400"
+        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+          conn === "live"
+            ? "bg-green-100 text-green-800"
+            : conn === "polling"
+              ? "bg-amber-100 text-amber-800"
+              : "bg-gray-100 text-gray-600"
         }`}
-      />
-      {conn === "live" ? "Live" : conn === "polling" ? "Polling" : "Connecting"}
+        title={
+          conn === "live"
+            ? "Realtime connected — updates arrive automatically"
+            : conn === "polling"
+              ? "Realtime down — polling every 30s"
+              : "Connecting to live updates…"
+        }
+      >
+        <span
+          className={`h-2 w-2 rounded-full ${
+            conn === "live" ? "bg-green-600" : conn === "polling" ? "bg-amber-500" : "bg-gray-400"
+          }`}
+        />
+        {conn === "live" ? "Live" : conn === "polling" ? "Polling" : "Connecting"}
+      </span>
+      <span className="text-xs text-ink/50" title={`${events} database events seen`}>
+        {updatedAt
+          ? `Updated ${updatedAt.toLocaleTimeString()}`
+          : "Waiting for first update…"}
+      </span>
     </span>
   );
 }
