@@ -200,6 +200,12 @@ export interface LockResult {
   ok: boolean;
   message: string;
 }
+
+export interface SetPasswordResult {
+  ok: boolean;
+  message: string;
+  tempPassword?: string;
+}
 export async function lockContest(contestId: string): Promise<LockResult> {
   const supabase = await createClient();
   const {
@@ -236,6 +242,66 @@ export async function lockContest(contestId: string): Promise<LockResult> {
 
   revalidatePath("/admin");
   return { ok: true, message: "Contest locked. Results are final." };
+}
+
+const TEMP_ALPHABET = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+function makeTempPassword(): string {
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => TEMP_ALPHABET[b % TEMP_ALPHABET.length]).join("");
+}
+
+// Set (or reset) a judge's password and show it ONCE to the admin, who
+// relays it out-of-band (paper card, SMS, in person). Never stored,
+// never emailed, never returned again. Judges only — admins use the
+// Supabase dashboard for their own credentials.
+export async function setJudgePassword(judgeId: string): Promise<SetPasswordResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Not signed in." };
+
+  const { data: target } = await supabase
+    .from("judges")
+    .select("id,user_id,name,email,is_admin,contest_id")
+    .eq("id", judgeId)
+    .maybeSingle();
+  const row = target as {
+    id: string;
+    user_id: string;
+    name: string;
+    email: string | null;
+    is_admin: boolean;
+    contest_id: string;
+  } | null;
+  if (!row) return { ok: false, message: "Judge not found." };
+  if (row.is_admin) return { ok: false, message: "Judges only — admins use the dashboard." };
+
+  const { data: me } = await supabase
+    .from("judges")
+    .select("is_admin,is_active")
+    .eq("user_id", user.id)
+    .eq("contest_id", row.contest_id);
+  const mine = (me ?? []) as { is_admin: boolean; is_active: boolean }[];
+  if (!mine.some((j) => j.is_admin && j.is_active)) {
+    return { ok: false, message: "Admins only." };
+  }
+
+  const tempPassword = makeTempPassword();
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(row.user_id, {
+    password: tempPassword,
+  });
+  if (error) return { ok: false, message: `Password set failed: ${error.message}` };
+
+  revalidatePath("/admin");
+  return {
+    ok: true,
+    message: `Temporary password for ${row.name} — relay it now, it won't be shown again.`,
+    tempPassword,
+  };
 }
 
 const RESEND_WINDOW_MINUTES = 10;

@@ -9,6 +9,7 @@ import AdminLive from "./admin-live";
 import LockButton from "./lock-button";
 import JudgeRowActions from "./judge-row-actions";
 import ResendButton from "./resend-button";
+import PasswordButton from "./password-button";
 import ContestPicker from "./contests/contest-picker";
 
 export const dynamic = "force-dynamic";
@@ -323,7 +324,10 @@ export default async function AdminHome({
                 </span>
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                   {!j.is_admin && (
-                    <ResendButton judgeId={j.id} name={j.name} knownEmail={j.email} />
+                    <>
+                      <ResendButton judgeId={j.id} name={j.name} knownEmail={j.email} />
+                      <PasswordButton judgeId={j.id} name={j.name} />
+                    </>
                   )}
                   <JudgeRowActions
                     judgeId={j.id}

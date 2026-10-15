@@ -2,14 +2,23 @@
 
 ## Logging in
 
+You have two ways in — use whichever works:
+
+**Password (fastest, no email needed).**
 1. Open the login page address your admin gave you.
-2. Type your email → **Email me a login link**.
-3. Open the email and press **Continue to CWPC**. (If your mail app
+2. Type your email and the password your admin gave you → **Sign in**.
+3. Forgot it? Ask your admin — they can set you a new one on the spot
+   and tell it to you directly. No email required.
+
+**Email link backup.** If passwords aren't working for someone:
+
+1. On the login page: type email → **Email me a login link**.
+2. Open the email and press **Continue to CWPC**. (If your mail app
    opened the link first, press the button anyway — nothing is used up
    until you click.)
-4. No link? Use the **6-digit code** from the same email instead:
+3. No link? Use the **6-digit code** from the same email instead:
    back on the login page, tap "I have a 6-digit code".
-5. Still stuck? Ask your admin to resend, and check spam.
+4. Still stuck? Ask your admin to resend, and check spam.
 
 ## Scoring
 

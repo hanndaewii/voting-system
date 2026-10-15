@@ -17,6 +17,15 @@ You can't go backwards, so do things in this order.
    settings freeze, and judges can finally see results.
 6. **Results page:** print, or download the ranking + scores CSVs.
 
+## Judges and passwords
+
+- Invite judges by email as usual, then press **Set password** on their
+  row. A one-time password appears once — write it on their judge card
+  (or message it to them) before closing. It is never emailed or shown
+  again. No email is needed for them to sign in.
+- Forgot password on event day? Press **Set password** again and read
+  them the new one. Takes ten seconds, no inbox involved.
+
 ## Reading the dashboard
 
 - Cards: live average and counts update as judges work (drafts count).
