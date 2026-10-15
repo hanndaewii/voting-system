@@ -1,62 +1,35 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import { getRole } from "@/lib/roles";
 
+// Thin by design: refresh the session, keep strangers out of protected
+// paths, pass everything else through. Role routing + enforcement live
+// in the pages (each one re-checks auth + role server-side), so there is
+// no per-request role database query here.
 export async function middleware(request: NextRequest) {
+  let response: NextResponse;
+  let user = null;
   try {
-    return await gated(request);
+    const session = await updateSession(request);
+    response = session.response;
+    user = session.user;
   } catch (e) {
-    // Failsafe: never 500 the whole site from middleware. Every protected
-    // page re-checks auth + role server-side and redirects itself, so
-    // falling through here is safe. The error lands in Vercel logs.
+    // Failsafe: never 500 the whole site from middleware.
     console.error("middleware failed open (pages re-guard):", e);
     return NextResponse.next({ request });
   }
-}
 
-async function gated(request: NextRequest) {
-  const { response, supabase } = await updateSession(request);
   const { pathname } = request.nextUrl;
 
-  // Let the callback route exchange codes/tokens untouched.
+  // Let the auth routes run untouched.
   if (pathname.startsWith("/auth/")) return response;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    if (
-      pathname === "/" ||
+  if (
+    !user &&
+    (pathname === "/" ||
       pathname.startsWith("/admin") ||
-      pathname.startsWith("/judge")
-    ) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-    return response;
-  }
-
-  if (pathname === "/" || pathname === "/login") {
-    const role = await getRole(supabase, user.id);
-    const dest =
-      role === "admin" ? "/admin" : role === "judge" ? "/judge" : "/no-access";
-    return NextResponse.redirect(new URL(dest, request.url));
-  }
-
-  if (pathname.startsWith("/admin")) {
-    const role = await getRole(supabase, user.id);
-    if (role !== "admin") {
-      const dest = role === "judge" ? "/judge" : "/no-access";
-      return NextResponse.redirect(new URL(dest, request.url));
-    }
-  }
-
-  if (pathname.startsWith("/judge")) {
-    const role = await getRole(supabase, user.id);
-    if (role !== "judge") {
-      const dest = role === "admin" ? "/admin" : "/no-access";
-      return NextResponse.redirect(new URL(dest, request.url));
-    }
+      pathname.startsWith("/judge"))
+  ) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return response;

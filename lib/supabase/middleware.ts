@@ -23,6 +23,6 @@ export async function updateSession(request: NextRequest) {
       },
     }
   );
-  await supabase.auth.getUser();
-  return { response: supabaseResponse, supabase };
+  const { data: { user } } = await supabase.auth.getUser();
+  return { response: supabaseResponse, supabase, user };
 }

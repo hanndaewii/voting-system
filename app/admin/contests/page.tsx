@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getRole } from "@/lib/roles";
 import LogoutButton from "@/components/logout-button";
 import CreateContestForm from "./create-form";
 
@@ -13,7 +12,7 @@ export default async function ContestsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  if ((await getRole(supabase, user.id)) !== "admin") redirect("/no-access");
+  // Role routing is enforced by app/admin/layout.tsx (see above).
 
   // Newest first: the dashboard defaults to the newest contest.
   const { data: contests } = await supabase

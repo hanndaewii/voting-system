@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { getRole } from "@/lib/roles";
 import { resolvePhotoUrl } from "@/lib/supabase/photos";
 import LogoutButton from "@/components/logout-button";
 import InviteForm from "./invite-form";
@@ -82,7 +81,8 @@ export default async function AdminHome({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  if ((await getRole(supabase, user.id)) !== "admin") redirect("/no-access");
+  // Role routing is enforced by app/admin/layout.tsx (a page-level
+  // redirect here would fire after the loading shell streams).
 
   const { data: contests } = await supabase
     .from("contests")

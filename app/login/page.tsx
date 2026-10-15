@@ -8,6 +8,8 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; returnTo?: string }>;
 }) {
   const { error, returnTo } = await searchParams;
+  // Signed-in routing is enforced by app/login/layout.tsx (a page-level
+  // redirect here would fire after the loading shell streams).
   return (
     <main className="flex min-h-screen items-center justify-center bg-ivory px-4">
       <div className="w-full max-w-md">

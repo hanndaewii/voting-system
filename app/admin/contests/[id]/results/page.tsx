@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getRole } from "@/lib/roles";
 import PrintButton from "./print-button";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +17,7 @@ export default async function ResultsPage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  if ((await getRole(supabase, user.id)) !== "admin") redirect("/no-access");
+  // Role routing is enforced by app/admin/layout.tsx (see above).
 
   const { data: contest } = await supabase
     .from("contests")

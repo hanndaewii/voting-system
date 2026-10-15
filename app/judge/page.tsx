@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getRole } from "@/lib/roles";
 import { resolvePhotoUrl } from "@/lib/supabase/photos";
 import LogoutButton from "@/components/logout-button";
 import ScoreSheet from "./score-sheet";
@@ -36,7 +35,7 @@ export default async function JudgeHome({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  if ((await getRole(supabase, user.id)) !== "judge") redirect("/no-access");
+  // Role routing is enforced by app/judge/layout.tsx (see app/admin/layout.tsx).
 
   const { data: jrows } = await supabase
     .from("judges")
@@ -45,7 +44,18 @@ export default async function JudgeHome({
     .eq("is_active", true)
     .eq("is_admin", false);
   const rows = ((jrows ?? []) as JudgeRow[]).filter((r) => one(r.contests));
-  if (rows.length === 0) redirect("/no-access");
+  // Layout guarantees at least one row; render empty instead of redirecting
+  // (a redirect here would fire after the loading shell streams).
+  if (rows.length === 0) {
+    return (
+      <main className="min-h-screen bg-ivory px-4 py-10">
+        <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 text-center shadow-xl ring-1 ring-gold-100">
+          <h1 className="font-display text-3xl text-ink">No contests assigned</h1>
+          <p className="mt-2 text-sm text-ink/60">Ask your administrator for an invite.</p>
+        </div>
+      </main>
+    );
+  }
 
   // Most recent non-draft contest wins; explicit ?contest= still respected.
   const byNewest = [...rows].sort(

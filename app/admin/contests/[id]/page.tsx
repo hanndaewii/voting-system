@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getRole } from "@/lib/roles";
 import { resolvePhotoUrl } from "@/lib/supabase/photos";
 import LogoutButton from "@/components/logout-button";
 import ContestantsManager from "../contestants-manager";
@@ -37,7 +36,8 @@ export default async function ContestSetupPage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  if ((await getRole(supabase, user.id)) !== "admin") redirect("/no-access");
+  // Global role routing is enforced by app/admin/layout.tsx (a page-level
+  // redirect here would fire after the loading shell streams).
 
   const { data: contest } = await supabase
     .from("contests")
@@ -64,6 +64,8 @@ export default async function ContestSetupPage({
   }
 
   // Must be this contest's admin (global admin role is not enough).
+  // Rendered inline (not a redirect): this runs under the loading
+  // Suspense boundary, where a thrown redirect can't become an HTTP 307.
   const { data: mine } = await supabase
     .from("judges")
     .select("is_admin,is_active")
@@ -72,7 +74,21 @@ export default async function ContestSetupPage({
   const isOurs = ((mine ?? []) as { is_admin: boolean; is_active: boolean }[]).some(
     (j) => j.is_admin && j.is_active
   );
-  if (!isOurs) redirect("/no-access");
+  if (!isOurs) {
+    return (
+      <main className="min-h-screen bg-ivory px-4 py-10">
+        <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 text-center shadow-xl ring-1 ring-gold-100">
+          <h1 className="font-display text-3xl text-ink">Not your contest</h1>
+          <p className="mt-2 text-sm text-ink/60">
+            You administer other contests, but not this one.
+          </p>
+          <Link href="/admin/contests" className="mt-4 inline-block text-sm text-gold-700 underline">
+            Back to contests
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   const [{ data: contestants }, { data: criteria }, { data: judges }] =
     await Promise.all([
