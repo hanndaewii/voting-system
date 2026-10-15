@@ -3,6 +3,18 @@ import { updateSession } from "@/lib/supabase/middleware";
 import { getRole } from "@/lib/roles";
 
 export async function middleware(request: NextRequest) {
+  try {
+    return await gated(request);
+  } catch (e) {
+    // Failsafe: never 500 the whole site from middleware. Every protected
+    // page re-checks auth + role server-side and redirects itself, so
+    // falling through here is safe. The error lands in Vercel logs.
+    console.error("middleware failed open (pages re-guard):", e);
+    return NextResponse.next({ request });
+  }
+}
+
+async function gated(request: NextRequest) {
   const { response, supabase } = await updateSession(request);
   const { pathname } = request.nextUrl;
 
