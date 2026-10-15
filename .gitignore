@@ -1,0 +1,6 @@
+# secrets — the service_role key must never be committed
+.env.local
+.env*.local
+# next.js (added in a later step)
+node_modules/
+.next/
